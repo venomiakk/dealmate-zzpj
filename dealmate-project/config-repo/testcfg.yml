@@ -1,0 +1,6 @@
+my:
+  greeting: "Hello, world!"
+  farewell: "Goodbye, world!"
+  language:
+    name: "English"
+    code: "en"
