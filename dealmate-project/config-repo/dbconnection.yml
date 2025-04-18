@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/dealmatedb
+    username: postgres
+    password: 123
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+## Fix Postgres JPA Error (Method org.postgresql.jdbc.PgConnection.createClob() is not yet implemented).
+#spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation=true
