@@ -18,38 +18,47 @@ jobs:
         with:
           java-version: "24"
           distribution: "oracle"
-      - name: Build Config Server
+
+      - name: Build and run Config Server
         run: |
-          cd dealmate-project/config-server
-          mvn clean install
+          mvn -f dealmate-project/config-server/pom.xml spring-boot:run &
+        # -DskipTests ?
+
       - name: Build Discovery Server
         run: |
-          cd dealmate-project/discovery-server
-          mvn clean install
+          mvn -f dealmate-project/discovery-server/pom.xml spring-boot:run &
       # - name: Build Auth Server
-      #   run: |
-      #     cd dealmate-project/auth-server
-      #     mvn clean install
+      #   run: mvn -f dealmate-project/auth-server/pom.xml spring-boot:run &
+
+      - name: Wait for servers to start
+        run: |
+          sleep 60
+
       - name: Build Deck Service
         run: |
           cd dealmate-project/deck-service
           mvn clean install
+
       # - name: Build Game Service
       #   run: |
       #     cd dealmate-project/game-service
       #     mvn clean install
+
       # - name: Build User Service
       #   run: |
       #     cd dealmate-project/user-service
       #     mvn clean install
+
       # - name: Build Chat Service
       #   run: |
       #     cd dealmate-project/chat-service
       #     mvn clean install
+
       # - name: Build AI Service
       #   run: |
       #     cd dealmate-project/ai-service
       #     mvn clean install
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:
