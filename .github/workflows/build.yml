@@ -35,10 +35,16 @@ jobs:
 
       - name: Check if servers are running
         run: |
-          echo "Config Server:"
-          curl -s --head http://localhost:8888/testcfg/default | grep "200"
-          echo "Discovery Server:"
-          curl -s --head http://localhost:8761 | grep "200"
+            echo "Config Server:"
+            curl -s --head http://localhost:8888/testcfg/default
+            echo "Discovery Server:"
+            curl -s --head http://localhost:8761
+        # run: |
+        # run: |
+        #   echo "Config Server:"
+        #   curl -s --head http://localhost:8888/testcfg/default | grep "200"
+        #   echo "Discovery Server:"
+        #   curl -s --head http://localhost:8761 | grep "200"
         # run: |
         #   curl -s --head http://localhost:8888/actuator/health | grep "200 OK"
         #   curl -s --head http://localhost:8761/actuator/health | grep "200 OK"
