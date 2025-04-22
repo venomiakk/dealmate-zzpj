@@ -26,10 +26,10 @@ jobs:
         run: |
           cd dealmate-project/discovery-server
           mvn clean install
-      - name: Build Auth Server
-        run: |
-          cd dealmate-project/auth-server
-          mvn clean install
+      # - name: Build Auth Server
+      #   run: |
+      #     cd dealmate-project/auth-server
+      #     mvn clean install
       - name: Build Deck Service
         run: |
           cd dealmate-project/deck-service
