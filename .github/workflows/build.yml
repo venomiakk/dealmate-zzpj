@@ -19,19 +19,20 @@ jobs:
           java-version: "24"
           distribution: "oracle"
 
-      - name: Build and run Config Server
-        run: |
-          mvn -f dealmate-project/config-server/pom.xml spring-boot:run &
-
       - name: Build and run Discovery Server
+        shell: pwsh
         run: |
-          mvn -f dealmate-project/discovery-server/pom.xml spring-boot:run &
+          Start-Process "mvn" "-f dealmate-project/discovery-server/pom.xml spring-boot:run" -NoNewWindow
+          Start-Sleep -Seconds 15
+
+      - name: Build and run Config Server
+        shell: pwsh
+        run: |
+          Start-Process "mvn" "-f dealmate-project/config-server/pom.xml spring-boot:run" -NoNewWindow
+          Start-Sleep -Seconds 15
+
       # - name: Build Auth Server
       #   run: mvn -f dealmate-project/auth-server/pom.xml spring-boot:run &
-
-      - name: Wait for servers to start
-        run: |
-          sleep 10
 
       - name: Check if servers are running
         run: |
@@ -56,7 +57,7 @@ jobs:
       - name: Build Deck Service
         run: |
           cd dealmate-project/deck-service
-          mvn clean install -DskipTests
+          mvn clean install
 
       # - name: Build Game Service
       #   run: |
