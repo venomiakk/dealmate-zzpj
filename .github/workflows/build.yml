@@ -34,12 +34,12 @@ jobs:
       # - name: Build Auth Server
       #   run: mvn -f dealmate-project/auth-server/pom.xml spring-boot:run &
 
-      - name: Check if servers are running
-        run: |
-            echo "Config Server:"
-            curl -s --head http://localhost:8888/testcfg/default
-            echo "Discovery Server:"
-            curl -s --head http://localhost:8761
+      # - name: Check if servers are running
+      #   run: |
+      #       echo "Config Server:"
+      #       curl -s --head http://localhost:8888/testcfg/default
+      #       echo "Discovery Server:"
+      #       curl -s --head http://localhost:8761
         # run: |
         # run: |
         #   echo "Config Server:"
