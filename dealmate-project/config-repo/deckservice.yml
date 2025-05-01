@@ -8,6 +8,9 @@ spring:
   config:
     import: dbconnection.yml
 
+deck:
+  api:
+    url: https://deckofcardsapi.com/api/deck/
 #! turn off the discovery client for testing purposes
 #eureka:
 #  client:
