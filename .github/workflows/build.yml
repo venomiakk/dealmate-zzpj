@@ -8,7 +8,7 @@ on:
 jobs:
   sonarqube:
     name: SonarQube
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,44 +20,22 @@ jobs:
           distribution: "oracle"
 
       - name: Build and run Discovery Server
-        shell: pwsh
         run: |
-          Start-Process "mvn" "-f dealmate-project/discovery-server/pom.xml spring-boot:run" -NoNewWindow
-          Start-Sleep -Seconds 15
+          mvn -f dealmate-project/discovery-server/pom.xml spring-boot:run &
+          sleep 15
 
       - name: Build and run Config Server
-        shell: pwsh
         run: |
-          Start-Process "mvn" "-f dealmate-project/config-server/pom.xml spring-boot:run" -NoNewWindow
-          Start-Sleep -Seconds 15
+          mvn -f dealmate-project/config-server/pom.xml spring-boot:run &
+          sleep 15
 
       # - name: Build Auth Server
       #   run: mvn -f dealmate-project/auth-server/pom.xml spring-boot:run &
 
-      # - name: Check if servers are running
-      #   run: |
-      #       echo "Config Server:"
-      #       curl -s --head http://localhost:8888/testcfg/default
-      #       echo "Discovery Server:"
-      #       curl -s --head http://localhost:8761
-      # run: |
-      # run: |
-      #   echo "Config Server:"
-      #   curl -s --head http://localhost:8888/testcfg/default | grep "200"
-      #   echo "Discovery Server:"
-      #   curl -s --head http://localhost:8761 | grep "200"
-      # run: |
-      #   curl -s --head http://localhost:8888/actuator/health | grep "200 OK"
-      #   curl -s --head http://localhost:8761/actuator/health | grep "200 OK"
-      #   # curl -s --head http://localhost:8080/actuator/health | grep "200 OK"
-      # run: |
-      #   curl -s -o /dev/null -w "%{http_code}" http://localhost:8888/actuator/health
-      #   curl -s -o /dev/null -w "%{http_code}" http://localhost:8761/actuator/health
-
       - name: Build Deck Service
         run: |
           cd dealmate-project/deck-service
-          mvn clean install -DskipTests
+          mvn clean install
 
       # - name: Build Game Service
       #   run: |
