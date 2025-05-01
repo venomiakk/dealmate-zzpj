@@ -11,7 +11,8 @@ spring:
 deck:
   api:
     url: https://deckofcardsapi.com/api/deck/
-#! turn off the discovery client for testing purposes
+
+# * turn off the discovery client for testing purposes
 #eureka:
 #  client:
 #    register-with-eureka: false

@@ -16,7 +16,7 @@ join multiplayer games and compete in real time.
 - [x] Centralized configuration via Spring Cloud Config Server
 - [x] Service discovery via Spring Cloud Eureka
 - [ ] Authorization management via Keycloak/Spring Authorization Server
-- [ ] Implementation of static code analysis (SonarQube)
+- [x] Implementation of static code analysis (SonarQube)
 - [ ] Syntactic news from the latest JDK
     - [ ] Virtual Threads
     - [ ] Gatherers
