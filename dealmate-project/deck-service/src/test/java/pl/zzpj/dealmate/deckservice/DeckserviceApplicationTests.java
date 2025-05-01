@@ -7,8 +7,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 class DeckserviceApplicationTests {
 
 	//TODO: This test is failing in the GitHub Actions, but it works locally.
-	//@Test
-	//void contextLoads() {
-	//}
+	@Test
+	void contextLoads() {
+	}
 
 }
