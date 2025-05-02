@@ -22,12 +22,12 @@ jobs:
       - name: Build and run Discovery Server
         run: |
           mvn -f dealmate-project/discovery-server/pom.xml spring-boot:run &
-          sleep 15
+          sleep 20
 
       - name: Build and run Config Server
         run: |
           mvn -f dealmate-project/config-server/pom.xml spring-boot:run &
-          sleep 15
+          sleep 20
 
       # - name: Build Auth Server
       #   run: mvn -f dealmate-project/auth-server/pom.xml spring-boot:run &
