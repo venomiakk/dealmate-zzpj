@@ -10,7 +10,6 @@ public class ConfigserverApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(ConfigserverApplication.class, args);
-		System.out.println("Config server started in: " + System.getProperty("user.dir"));
 	}
 
 }

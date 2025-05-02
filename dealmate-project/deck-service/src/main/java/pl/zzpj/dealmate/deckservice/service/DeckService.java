@@ -1,16 +1,19 @@
 package pl.zzpj.dealmate.deckservice.service;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import pl.zzpj.dealmate.deckservice.external.response.CreateDeckApiResponse;
+import pl.zzpj.dealmate.deckservice.dto.CardDTO;
+import pl.zzpj.dealmate.deckservice.payload.response.CreateDeckApiResponse;
 import pl.zzpj.dealmate.deckservice.model.DeckEntity;
+import pl.zzpj.dealmate.deckservice.payload.response.DrawCardsApiResponse;
 import pl.zzpj.dealmate.deckservice.repository.DeckRepository;
+
+import java.util.List;
 
 @Service
 public class DeckService {
-    //TODO: Consider using WebClient because RestTemplate is deprecated
+    //TODO: Consider using async WebClient because RestTemplate is deprecated
     private final RestTemplate restTemplate;
     private final DeckRepository deckRepository;
     @Value("${deck.api.url}")
@@ -35,4 +38,21 @@ public class DeckService {
             throw new RuntimeException("Failed to create a new deck");
         }
     }
+
+    public List<CardDTO> drawCardsFromDeck(long id, int count) {
+        // ?: Currently returned images are doubled because of getPngImage and getSvgImage in CardDTO
+        // ?: Consider flattening the response in the future
+        DeckEntity deckEntity = deckRepository.findById(id).orElseThrow(() -> new RuntimeException("Deck not found"));
+        String url = deckApiUrl + "/" + deckEntity.getDeckId() + "/draw/?count=" + count;
+        DrawCardsApiResponse drawCardsApiResponse = restTemplate.getForObject(url, DrawCardsApiResponse.class);
+        if (drawCardsApiResponse != null && deckEntity.getRemainingCards() >= count) {
+            List<CardDTO> cards = drawCardsApiResponse.getCards();
+            deckEntity.setRemainingCards(drawCardsApiResponse.getRemaining());
+            deckRepository.save(deckEntity);
+            return cards;
+        } else {
+            throw new RuntimeException("Failed to draw cards from the deck");
+        }
+    }
+
 }

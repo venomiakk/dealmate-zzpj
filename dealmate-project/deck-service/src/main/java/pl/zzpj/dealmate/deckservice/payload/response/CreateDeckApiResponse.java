@@ -1,4 +1,4 @@
-package pl.zzpj.dealmate.deckservice.external.response;
+package pl.zzpj.dealmate.deckservice.payload.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
