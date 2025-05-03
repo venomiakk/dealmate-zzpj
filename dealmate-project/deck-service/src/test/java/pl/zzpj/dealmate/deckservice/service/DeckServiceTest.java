@@ -8,6 +8,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 import pl.zzpj.dealmate.deckservice.dto.CardDTO;
 import pl.zzpj.dealmate.deckservice.dto.ImageLinksDTO;
+import pl.zzpj.dealmate.deckservice.exception.CreateDeckException;
+import pl.zzpj.dealmate.deckservice.exception.DrawCardsException;
 import pl.zzpj.dealmate.deckservice.payload.response.CreateDeckApiResponse;
 import pl.zzpj.dealmate.deckservice.model.DeckEntity;
 import pl.zzpj.dealmate.deckservice.payload.response.DrawCardsApiResponse;
@@ -73,7 +75,7 @@ class DeckServiceTest {
 
         // Testowanie rzucenia wyjątku
         assertThatThrownBy(() -> deckService.createDeck(1))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(CreateDeckException.class)
                 .hasMessageContaining("Failed to create a new deck");
     }
 
@@ -107,7 +109,7 @@ class DeckServiceTest {
         String expectedUrl = "https://deckofcardsapi.com/api/deck/abc123/draw/?count=2"; // przykład
         DrawCardsApiResponse response = new DrawCardsApiResponse();
         response.setSuccess(true);
-        response.setDeck_id(deckId);
+        response.setDeckId(deckId);
         response.setCards(cards);
         response.setRemaining(8);
 
@@ -163,7 +165,7 @@ class DeckServiceTest {
         when(deckRepository.findById(id)).thenReturn(java.util.Optional.of(deckEntity));
 
         assertThatThrownBy(() -> deckService.drawCardsFromDeck(id, count))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(DrawCardsException.class)
                 .hasMessageContaining("Failed to draw cards from the deck");
     }
 }

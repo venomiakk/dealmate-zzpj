@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 public class CreateDeckApiResponse {
-    @JsonProperty("deck_id")
+    @JsonProperty("deckId")
     private String deckId;
     private boolean shuffled;
     @JsonProperty("remaining")
