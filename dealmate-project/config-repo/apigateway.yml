@@ -1,0 +1,11 @@
+test:
+  message: "Hello world from the user service cfg file!"
+
+server:
+  port: 8100
+
+# * turn off the discovery client for testing purposes
+#eureka:
+#  client:
+#    register-with-eureka: false
+#    fetch-registry: false
