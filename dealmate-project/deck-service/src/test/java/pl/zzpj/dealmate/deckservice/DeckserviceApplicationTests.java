@@ -6,10 +6,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 class DeckserviceApplicationTests {
 
-	//This test is failing in the GitHub Actions, but it works locally.
-    //TODO: Creating docker with Postgres (locally and in GH) should resolve this issue.
-	//@Test
-	//void contextLoads() {
-	//}
+	@Test
+	void contextLoads() {
+        // Method to test if the Spring application context loads successfully
+    }
 
 }
