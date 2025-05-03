@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import pl.zzpj.dealmate.deckservice.dto.CardDTO;
+import pl.zzpj.dealmate.deckservice.exception.CreateDeckException;
+import pl.zzpj.dealmate.deckservice.exception.DrawCardsException;
 import pl.zzpj.dealmate.deckservice.payload.response.CreateDeckApiResponse;
 import pl.zzpj.dealmate.deckservice.model.DeckEntity;
 import pl.zzpj.dealmate.deckservice.payload.response.DrawCardsApiResponse;
@@ -35,7 +37,7 @@ public class DeckService {
             deckRepository.save(deckEntity);
             return deckEntity;
         } else {
-            throw new RuntimeException("Failed to create a new deck");
+            throw new CreateDeckException("Failed to create a new deck");
         }
     }
 
@@ -45,14 +47,15 @@ public class DeckService {
         DeckEntity deckEntity = deckRepository.findById(id).orElseThrow(() -> new RuntimeException("Deck not found"));
         String url = deckApiUrl + "/" + deckEntity.getDeckId() + "/draw/?count=" + count;
         DrawCardsApiResponse drawCardsApiResponse = restTemplate.getForObject(url, DrawCardsApiResponse.class);
-        if (drawCardsApiResponse != null && deckEntity.getRemainingCards() >= count) {
-            List<CardDTO> cards = drawCardsApiResponse.getCards();
-            deckEntity.setRemainingCards(drawCardsApiResponse.getRemaining());
-            deckRepository.save(deckEntity);
-            return cards;
-        } else {
-            throw new RuntimeException("Failed to draw cards from the deck");
-        }
+
+        if (drawCardsApiResponse == null) throw new DrawCardsException("Failed to draw cards from the deck!");
+        if (deckEntity.getRemainingCards() < count) throw new DrawCardsException("Not enough cards in the deck!");
+
+        List<CardDTO> cards = drawCardsApiResponse.getCards();
+        deckEntity.setRemainingCards(drawCardsApiResponse.getRemaining());
+        deckRepository.save(deckEntity);
+        return cards;
+
     }
 
 }

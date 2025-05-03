@@ -1,5 +1,9 @@
 # dealmate-zzpj
 
+## Notes
+- Consider creating configuration profiles for different environments (dev, test, prod)
+- Consider creating external common-dto library for all services
+
 ## Dealmate - Card Game Platform
 
 The aim of the project is to create a platform for playing various card games online, allowing users to set up tables,
@@ -10,6 +14,7 @@ join multiplayer games and compete in real time.
 - (Oracle) [jdk-24](https://www.oracle.com/pl/java/technologies/downloads/) >=
 - Maven 3.9.5 >=
 - PostgreSQL 17 >=
+
 
 ## Selected topics
 

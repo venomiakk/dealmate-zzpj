@@ -1,6 +1,5 @@
 package pl.zzpj.dealmate.deckservice.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,6 +82,7 @@ class DeckServiceTest {
         // given
         long id = 1L;
         int count = 2;
+        String deckId = "abc123";
 
         ImageLinksDTO imageLinksDTO = new ImageLinksDTO();
         imageLinksDTO.setPng("https://deckofcardsapi.com/static/img/AS.png");
@@ -90,7 +90,7 @@ class DeckServiceTest {
 
         DeckEntity deckEntity = new DeckEntity();
         deckEntity.setId(id);
-        deckEntity.setDeckId("abc123");
+        deckEntity.setDeckId(deckId);
         deckEntity.setRemainingCards(10);
 
         CardDTO card1 = new CardDTO();
@@ -107,7 +107,7 @@ class DeckServiceTest {
         String expectedUrl = "https://deckofcardsapi.com/api/deck/abc123/draw/?count=2"; // przykład
         DrawCardsApiResponse response = new DrawCardsApiResponse();
         response.setSuccess(true);
-        response.setDeck_id("abc123");
+        response.setDeck_id(deckId);
         response.setCards(cards);
         response.setRemaining(8);
 
@@ -148,5 +148,22 @@ class DeckServiceTest {
 
         assertThatThrownBy(() -> deckService.drawCardsFromDeck(id, count))
                 .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void shouldThrowWhenNotEnoughCards(){
+        long id = 1L;
+        int count = 2;
+
+        DeckEntity deckEntity = new DeckEntity();
+        deckEntity.setId(id);
+        deckEntity.setDeckId("abc123");
+        deckEntity.setRemainingCards(1);
+
+        when(deckRepository.findById(id)).thenReturn(java.util.Optional.of(deckEntity));
+
+        assertThatThrownBy(() -> deckService.drawCardsFromDeck(id, count))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to draw cards from the deck");
     }
 }
