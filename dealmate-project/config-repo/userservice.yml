@@ -1,0 +1,15 @@
+test:
+  message: "Hello world from the user service cfg file!"
+
+server:
+  port: 8102
+
+spring:
+  config:
+    import: dbconnection.yml
+
+# * turn off the discovery client for testing purposes
+#eureka:
+#  client:
+#    register-with-eureka: false
+#    fetch-registry: false
