@@ -44,33 +44,35 @@ jobs:
           mvn -f dealmate-project/config-server/pom.xml spring-boot:run &
           sleep 20
 
-      # - name: Build Auth Server
-      #   run: mvn -f dealmate-project/auth-server/pom.xml spring-boot:run &
+      - name: Build and run Auth Server
+        run: |
+          mvn -f dealmate-project/auth-server/pom.xml spring-boot:run &
+          sleep 20
+
+      - name: Build and run API Gateway
+        run: |
+          mvn -f dealmate-project/api-gateway/pom.xml spring-boot:run &
+          sleep 20
+
+      - name: Build User Service
+        run: |
+          mvn -f dealmate-project/user-service clean install
 
       - name: Build Deck Service
         run: |
-          cd dealmate-project/deck-service
-          mvn clean install
+          mvn -f dealmate-project/deck-service clean install
 
-      # - name: Build Game Service
-      #   run: |
-      #     cd dealmate-project/game-service
-      #     mvn clean install
-
-      # - name: Build User Service
-      #   run: |
-      #     cd dealmate-project/user-service
-      #     mvn clean install
-
-      # - name: Build Chat Service
-      #   run: |
-      #     cd dealmate-project/chat-service
-      #     mvn clean install
-
-      # - name: Build AI Service
-      #   run: |
-      #     cd dealmate-project/ai-service
-      #     mvn clean install
+#      - name: Build Game Service
+#        run: |
+#          mvn -f dealmate-project/game-service clean install
+#
+#      - name: Build Chat Service
+#        run: |
+#          mvn -f dealmate-project/chat-service clean install
+#
+#      - name: Build AI Service
+#        run: |
+#          mvn -f dealmate-project/ai-service clean install
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
