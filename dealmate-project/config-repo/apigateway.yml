@@ -4,6 +4,29 @@ test:
 server:
   port: 8100
 
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: lb://USERSERVICE
+          predicates:
+            - Path=/userservice/**
+          filters:
+            - StripPrefix=1
+
+        - id: deck-service
+          uri: lb://DECKSERVICE
+          predicates:
+            - Path=/deckservice/**
+          filters:
+            - StripPrefix=1
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: DEBUG
+
 # * turn off the discovery client for testing purposes
 #eureka:
 #  client:
