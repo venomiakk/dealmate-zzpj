@@ -62,9 +62,9 @@ jobs:
         run: |
           mvn -f dealmate-project/deck-service clean install
 
-#      - name: Build Game Service
-#        run: |
-#          mvn -f dealmate-project/game-service clean install
+      - name: Build Game Service
+        run: |
+          mvn -f dealmate-project/game-service clean install
 #
 #      - name: Build Chat Service
 #        run: |
