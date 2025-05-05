@@ -1,8 +1,8 @@
 # dealmate-zzpj
 
 ## Notes
-- Consider creating configuration profiles for different environments (dev, test, prod)
 - Consider creating external common-dto library for all services
+- Consider creating configuration profiles for different environments (dev, test, prod)
 
 ## Dealmate - Card Game Platform
 
@@ -15,6 +15,25 @@ join multiplayer games and compete in real time.
 - Maven 3.9.5 >=
 - PostgreSQL 17 >=
 
+## Servers & Services
+
+- *Eureka Discovery Server* (**discoveryserver**) - port 8761
+- *Cloud Config Server* (**configserver**) - port 8888
+- *Authorization Server* (**authserver**) - port 8765
+- *API Gateway* (**apigateway**) - port 8100
+- Deck Service (**deckservice**) - port 8101
+- User Service (**userservice**) - port 8102
+- AI Service (**aiservice**) - port 8103
+- Game Service (**gameservice**) - port 8104
+- Chat Service (**chatservice**) - port 8105
+
+## Startup order
+
+1. Start the (**discoveryserver**) server
+1. Start the (**configserver**) server
+1. Start the (**authserver**) server
+1. Start the (**apigateway**) server
+1. Start the rest of the services
 
 ## Selected topics
 
@@ -37,21 +56,6 @@ join multiplayer games and compete in real time.
 - Chat during the game
 - Integration with AI to analyze the game (suggest moves)
 
-## Servers & Services
-
-- *Eureka Discovery Server* (**discoveryserver**) - port 8761
-- *Cloud Config Server* (**configserver**) - port 8888
-- Deck Service (**deckservice**) - port 8101
-- Game Service (**gameservice**) - port ?
-- User Service (**userservice**) - port ?
-- Chat Service (**chatservice**) - port ?
-- AIService (**aiservice**) - port ?
-
-## Startup order
-
-1. Start the (**discoveryserver**) service
-1. Start the (**configserver**) service
-1. Start the rest of the services
 
 ## Contributors
 
