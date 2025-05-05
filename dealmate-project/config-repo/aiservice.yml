@@ -1,0 +1,7 @@
+test:
+  message: "Hello world from the AI Service cfg file!"
+
+server:
+  port: 8103
+
+

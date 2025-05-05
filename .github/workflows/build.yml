@@ -69,10 +69,10 @@ jobs:
 #      - name: Build Chat Service
 #        run: |
 #          mvn -f dealmate-project/chat-service clean install
-#
-#      - name: Build AI Service
-#        run: |
-#          mvn -f dealmate-project/ai-service clean install
+
+      - name: Build AI Service
+        run: |
+          mvn -f dealmate-project/ai-service clean install
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
