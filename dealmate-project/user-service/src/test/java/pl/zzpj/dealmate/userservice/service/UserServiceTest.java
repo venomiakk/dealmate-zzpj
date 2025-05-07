@@ -6,14 +6,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import pl.zzpj.dealmate.userservice.exception.UserWithLoginExistsException;
+import pl.zzpj.dealmate.userservice.exception.custom.UserWithEmailDoesntExistException;
+import pl.zzpj.dealmate.userservice.exception.custom.UserWithEmailExistsException;
+import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginDoesntExistException;
+import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginExistsException;
 import pl.zzpj.dealmate.userservice.model.UserEntity;
 import pl.zzpj.dealmate.userservice.payload.request.RegisterRequest;
 import pl.zzpj.dealmate.userservice.repository.UserRepository;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -36,18 +39,18 @@ class UserServiceTest {
         RegisterRequest request = new RegisterRequest("testUser", "email@example.com", "password");
         UserEntity savedUser = new UserEntity("testUser", "email@example.com", "encodedPassword");
 
-        when(userRepository.existsByUsername("testUser")).thenReturn(false);
-        when(userRepository.existsByEmail("email@example.com")).thenReturn(false);
-        when(passwordEncoder.encode("password")).thenReturn("encodedPassword");
+        when(userRepository.existsByUsername(request.getUsername())).thenReturn(false);
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+        when(passwordEncoder.encode(request.getPassword())).thenReturn(savedUser.getPassword());
         when(userRepository.save(any(UserEntity.class))).thenReturn(savedUser);
 
         // When
         UserEntity result = userService.registerUser(request);
 
         // Then
-        assertThat(result.getUsername()).isEqualTo("testUser");
-        assertThat(result.getEmail()).isEqualTo("email@example.com");
-        assertThat(result.getPassword()).isEqualTo("encodedPassword");
+        assertThat(result.getUsername()).isEqualTo(savedUser.getUsername());
+        assertThat(result.getEmail()).isEqualTo(savedUser.getEmail());
+        assertThat(result.getPassword()).isEqualTo(savedUser.getPassword());
     }
 
     @Test
@@ -55,15 +58,12 @@ class UserServiceTest {
         // Given
         RegisterRequest request = new RegisterRequest("testUser", "email@example.com", "password");
 
-        when(userRepository.existsByUsername("testUser")).thenReturn(true);
+        when(userRepository.existsByUsername(request.getUsername())).thenReturn(true);
 
         // When & Then
-        try {
-            userService.registerUser(request);
-        } catch (Exception e) {
-            assertThat(e).isInstanceOf(UserWithLoginExistsException.class);
-            assertThat(e.getMessage()).isEqualTo("Error: Username is already taken!");
-        }
+        assertThatThrownBy(() -> userService.registerUser(request))
+                .isInstanceOf(UserWithLoginExistsException.class)
+                .hasMessage("User with username " + request.getUsername() + " already exists!");
     }
 
     @Test
@@ -71,49 +71,71 @@ class UserServiceTest {
         // Given
         RegisterRequest request = new RegisterRequest("testUser", "email@example.com", "password");
 
-        when(userRepository.existsByUsername("testUser")).thenReturn(false);
-        when(userRepository.existsByEmail("email@example.com")).thenReturn(true);
+        when(userRepository.existsByUsername(request.getUsername())).thenReturn(false);
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(true);
 
         // When & Then
-        try {
-            userService.registerUser(request);
-        } catch (Exception e) {
-            assertThat(e).isInstanceOf(UserWithLoginExistsException.class);
-            assertThat(e.getMessage()).isEqualTo("Error: Email is already in use!");
-        }
+        assertThatThrownBy(() -> userService.registerUser(request))
+                .isInstanceOf(UserWithEmailExistsException.class)
+                .hasMessage("User with email " + request.getEmail() + " already exists!");
     }
 
     @Test
     void shouldGetUserByUsernameSuccessfully() {
         // Given
-        String username = "testUser";
-        UserEntity user = new UserEntity(username, "email@example.com", "password");
+        UserEntity user = new UserEntity("testUser", "email@example.com", "password");
 
-        when(userRepository.findByUsername(username)).thenReturn(java.util.Optional.of(user));
+        when(userRepository.findByUsername(user.getUsername())).thenReturn(java.util.Optional.of(user));
 
         // When
-        UserEntity result = userService.getUserByUsername(username);
+        UserEntity result = userService.getUserByUsername(user.getUsername());
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getUsername()).isEqualTo(username);
-        assertThat(result.getEmail()).isEqualTo("email@example.com");
-        assertThat(result.getPassword()).isEqualTo("password");
+        assertThat(result.getUsername()).isEqualTo(user.getUsername());
+        assertThat(result.getEmail()).isEqualTo(user.getEmail());
     }
 
-    //@Test
-    //void shouldThrowWhenUserNotFound() {
-    //    // Given
-    //    String username = "nonExistentUser";
-    //
-    //    when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
-    //
-    //    // When & Then
-    //    try {
-    //        userService.getUserByUsername(username);
-    //    } catch (Exception e) {
-    //        assertThat(e).isInstanceOf(UserWithLoginExistsException.class);
-    //        assertThat(e.getMessage()).isEqualTo("User with username nonExistentUser does not exist");
-    //    }
-    //}
+    @Test
+    void shouldThrowWhenUserWithUsernameNotFound() {
+        // Given
+        String username = "nonExistentUser";
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> userService.getUserByUsername(username))
+                .isInstanceOf(UserWithLoginDoesntExistException.class)
+                .hasMessage("User with username " + username + " doesn't exist!");
+    }
+
+    @Test
+    void shouldGetUserByEmailSuccessfully() {
+        // Given
+        UserEntity user = new UserEntity("testUser", "email@example.com", "password");
+
+        // When
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(java.util.Optional.of(user));
+
+        // Then
+        UserEntity result = userService.getUserByEmail(user.getEmail());
+        assertThat(result).isNotNull();
+        assertThat(result.getUsername()).isEqualTo(user.getUsername());
+        assertThat(result.getEmail()).isEqualTo(user.getEmail());
+
+    }
+
+    @Test
+    void shouldThrowWhenUserWithEmailNotFound() {
+        // Given
+        String email = "email@example.com";
+
+        // When
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+        // Then
+        assertThatThrownBy(() -> userService.getUserByEmail(email))
+                .isInstanceOf(UserWithEmailDoesntExistException.class)
+                .hasMessage("User with email " + email + " doesn't exist!");
+    }
 }

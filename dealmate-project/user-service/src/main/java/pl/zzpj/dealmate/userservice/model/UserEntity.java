@@ -28,7 +28,6 @@ public class UserEntity {
 
     @Column(nullable = false)
     @NotBlank
-    @Size(min = 6, max = 40)
     private String password;
 
     @Column(nullable = false)
@@ -44,15 +43,18 @@ public class UserEntity {
     @Column(name = "last_name")
     private String lastName;
 
-    //TODO: add country (create enum for countries and connect to flag api)
+    @Column(name = "country_code")
+    @Enumerated(EnumType.STRING)
+    private ECountryCodes countryCode;
 
     public UserEntity(@NotBlank @Size(min = 3, max = 20) String username, @NotBlank @Size(max = 50) String email,
-                      @NotBlank @Size(min = 6, max = 40) String password) {
+                      @NotBlank String password) {
         this.username = username;
         this.email = email;
         this.password = password;
         this.role = ERole.ROLE_USER;
     }
+
 
     public UserEntity() {
 
