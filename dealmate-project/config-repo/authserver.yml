@@ -1,12 +1,14 @@
 test:
   message: "Hello world from the auth server cfg file!"
 
+#### VARIABLES ####
 gateway:
   client:
     id: gateway-client
     secret: gateway-secret
     host:
       url: http://localhost:8100
+####################
 
 server:
   port: 9000

@@ -28,9 +28,7 @@ public class Oauth2AccessTokenCustomizer implements OAuth2TokenCustomizer<JwtEnc
                                 c.replaceFirst("^ROLE_", ""))
                         .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
                 claims.put("roles", roles);
-
-                // claims.put("email", user.getEmail());
-                // claims.put("sub", user.getId());
+                // *: For more details probably CustomUser extending User is needed
             });
         }
     }

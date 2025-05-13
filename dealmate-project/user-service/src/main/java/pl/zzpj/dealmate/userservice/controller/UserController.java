@@ -1,6 +1,7 @@
 package pl.zzpj.dealmate.userservice.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -12,6 +13,7 @@ import pl.zzpj.dealmate.userservice.service.UserService;
 
 import java.util.Enumeration;
 
+@Slf4j
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -24,7 +26,6 @@ public class UserController {
 
     @GetMapping("authtest")
     public ResponseEntity<String> authTest(Authentication authentication, HttpServletRequest request) {
-        // Logowanie nagłówków - pomocne przy debugowaniu
         Enumeration<String> headerNames = request.getHeaderNames();
         StringBuilder headers = new StringBuilder();
         while (headerNames.hasMoreElements()) {
@@ -40,8 +41,7 @@ public class UserController {
         try {
             String className = authentication.getClass().getName();
 
-            if (authentication instanceof JwtAuthenticationToken) {
-                JwtAuthenticationToken jwtAuthenticationToken = (JwtAuthenticationToken) authentication;
+            if (authentication instanceof JwtAuthenticationToken jwtAuthenticationToken) {
                 String username = authentication.getName();
                 String jwtString = jwtAuthenticationToken.getToken().getTokenValue();
 
@@ -58,6 +58,7 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<UserEntity> registerUser(@RequestBody RegisterRequest registerRequest) {
+        log.debug("Registering user with request: {}", registerRequest);
         // TODO: Add URI builder
         UserEntity user = userService.registerUser(registerRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(user);

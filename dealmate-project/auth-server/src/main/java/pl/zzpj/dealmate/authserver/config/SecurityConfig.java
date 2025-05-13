@@ -2,12 +2,15 @@ package pl.zzpj.dealmate.authserver.config;
 
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,9 +34,11 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import pl.zzpj.dealmate.authserver.service.CustomUserDetailsService;
 
 import java.util.UUID;
 
+@Slf4j
 @Configuration
 public class SecurityConfig {
 
@@ -45,9 +50,12 @@ public class SecurityConfig {
     private String gatewayClientSecret;
 
     private final Oauth2AccessTokenCustomizer oauth2AccessTokenCustomizer;
+    private final CustomUserDetailsService customUserDetailsService;
 
-    public SecurityConfig(Oauth2AccessTokenCustomizer oauth2AccessTokenCustomizer) {
+    public SecurityConfig(Oauth2AccessTokenCustomizer oauth2AccessTokenCustomizer,
+                          CustomUserDetailsService customUserDetailsService) {
         this.oauth2AccessTokenCustomizer = oauth2AccessTokenCustomizer;
+        this.customUserDetailsService = customUserDetailsService;
     }
 
     @Bean
@@ -112,26 +120,22 @@ public class SecurityConfig {
     @Bean
     @Order(2) // security filter chain for the rest of your application and any custom endpoints you may have
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        // @formatter:off
         http
                 .formLogin(Customizer.withDefaults()) // Enable form login
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated());
-        // @formatter:on
 
         return http.build();
     }
 
-    // *: In-memory user details manager for testing purposes
     @Bean
-    UserDetailsService users() {
-        // @formatter:off
-        UserDetails user = User.builder()
-                .username("user")
-                .password("user")
-                .passwordEncoder(passwordEncoder()::encode)
-                .roles("USER")
-                .build();
-        // @formatter:on
-        return new InMemoryUserDetailsManager(user);
+    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+            log.info("SecurityConfig1: Configuring AuthenticationManager");
+            AuthenticationManagerBuilder authenticationManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+            authenticationManagerBuilder
+                    .userDetailsService(customUserDetailsService)
+                    .passwordEncoder(passwordEncoder());
+            log.info("SecuriityConfig2: AuthenticationManager configured with CustomUserDetailsService");
+            return authenticationManagerBuilder.build();
     }
+
 }
