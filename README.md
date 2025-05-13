@@ -19,7 +19,7 @@ join multiplayer games and compete in real time.
 
 - *Eureka Discovery Server* (**discoveryserver**) - port 8761
 - *Cloud Config Server* (**configserver**) - port 8888
-- *Authorization Server* (**authserver**) - port 8765
+- *Authorization Server* (**authserver**) - port 9000
 - *API Gateway* (**apigateway**) - port 8100
 - Deck Service (**deckservice**) - port 8101
 - User Service (**userservice**) - port 8102

@@ -1,8 +1,22 @@
 test:
   message: "Hello world from the auth server cfg file!"
 
+gateway:
+  client:
+    id: gateway-client
+    secret: gateway-secret
+    host:
+      url: http://localhost:8100
+
 server:
-  port: 8765
+  port: 9000
+  address: 127.0.0.1
+
+spring:
+  security:
+    oauth2:
+      authserver:
+        issuer: http://authserver:9000
 
 # * turn off the discovery client for testing purposes
 #eureka:

@@ -5,6 +5,24 @@ server:
   port: 8100
 
 spring:
+  security:
+    oauth2:
+      client:
+        provider:
+          platform-auth-server:
+            issuer-uri: http://127.0.0.1:9000
+        registration:
+          gateway-client:
+            provider: platform-auth-server
+            client-id: gateway-client
+            client-secret: gateway-secret
+            client-authentication-method: client_secret_basic
+            authorization-grant-type: authorization_code
+            redirect-uri: http://localhost:8100/login/oauth2/code/gateway-client
+            scope:
+              - openid
+              - profile
+              - email
   cloud:
     gateway:
       routes:
@@ -14,6 +32,8 @@ spring:
             - Path=/userservice/**
           filters:
             - StripPrefix=1
+#            For authentication
+            - TokenRelay
 
         - id: deck-service
           uri: lb://DECKSERVICE
