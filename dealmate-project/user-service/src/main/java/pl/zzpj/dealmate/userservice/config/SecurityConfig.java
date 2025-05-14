@@ -20,8 +20,8 @@ public class SecurityConfig {
                 // * POST requests are not working with CSRF enabled
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/user/register").permitAll()
-                        .requestMatchers("/user/authtest").authenticated()
+                        //.requestMatchers("/user/register").permitAll()
+                        .requestMatchers("/test/authtest").authenticated()
                         .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(resource -> resource
