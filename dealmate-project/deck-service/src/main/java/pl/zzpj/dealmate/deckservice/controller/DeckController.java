@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.zzpj.dealmate.deckservice.dto.CardDTO;
 import pl.zzpj.dealmate.deckservice.model.DeckEntity;
+import pl.zzpj.dealmate.deckservice.model.PileEntity;
 import pl.zzpj.dealmate.deckservice.service.DeckService;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public class DeckController {
         }
     }
 
+
     //Reshuffles cards in already existing deck(if remaining=True will only shuffle
     //those cards remaining in the main stack, leaving any piles or drawn cards alone).
     @PostMapping("/reshuffledeck/{id}")
@@ -42,9 +44,6 @@ public class DeckController {
     }
 
 
-
-
-
     @GetMapping("/drawcards/{id}/{count}")
     public ResponseEntity<List<CardDTO>> drawCardsFromDeck(@PathVariable long id, @PathVariable int count) {
         try{
@@ -53,4 +52,18 @@ public class DeckController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
+    @GetMapping("/{id}/pile/{pileName}/add")
+    public ResponseEntity<PileEntity> addToPile(@PathVariable("id") Long id,
+                                                @PathVariable("pileName") String pileName,
+                                                @RequestParam List<String> cards) {
+        try {
+            PileEntity pile = deckService.addCardsToPile(id, pileName, cards);
+            return ResponseEntity.ok(pile);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+
 }
