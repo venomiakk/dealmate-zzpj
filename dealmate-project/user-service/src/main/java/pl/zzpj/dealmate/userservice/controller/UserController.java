@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.zzpj.dealmate.userservice.model.UserEntity;
-import pl.zzpj.dealmate.userservice.payload.request.RegisterRequest;
+import pl.zzpj.dealmate.userservice.dto.request.RegisterRequest;
 import pl.zzpj.dealmate.userservice.service.UserService;
 
 

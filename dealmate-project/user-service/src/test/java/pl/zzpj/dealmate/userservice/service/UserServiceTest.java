@@ -11,7 +11,7 @@ import pl.zzpj.dealmate.userservice.exception.custom.UserWithEmailExistsExceptio
 import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginDoesntExistException;
 import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginExistsException;
 import pl.zzpj.dealmate.userservice.model.UserEntity;
-import pl.zzpj.dealmate.userservice.payload.request.RegisterRequest;
+import pl.zzpj.dealmate.userservice.dto.request.RegisterRequest;
 import pl.zzpj.dealmate.userservice.repository.UserRepository;
 
 import java.util.Optional;
