@@ -42,6 +42,14 @@ spring:
           filters:
             - StripPrefix=1
 
+        - id: game-service
+          uri: lb://GAMESERVICE
+          predicates:
+            - Path=/gameservice/**
+          filters:
+            - StripPrefix=1
+            - TokenRelay
+
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
