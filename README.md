@@ -39,12 +39,12 @@ join multiplayer games and compete in real time.
 
 - [x] Centralized configuration via Spring Cloud Config Server
 - [x] Service discovery via Spring Cloud Eureka
-- [ ] Authorization management via Keycloak/Spring Authorization Server
+- [x] Authorization management via Spring Authorization Server
 - [x] Implementation of static code analysis (SonarQube)
 - [ ] Syntactic news from the latest JDK
     - [ ] Virtual Threads
     - [ ] Gatherers
-- [ ] Using AssertJ in Testing
+- [x] Using AssertJ in Testing
 - [ ] Concurrency (multiple games at the same time)
 - [ ] Use of AI
 
