@@ -23,10 +23,13 @@ import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
@@ -34,6 +37,9 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import pl.zzpj.dealmate.authserver.service.CustomUserDetailsService;
 
 import java.util.UUID;
@@ -48,6 +54,10 @@ public class SecurityConfig {
     private String gatewayClientHostUrl;
     @Value("${gateway.client.secret}")
     private String gatewayClientSecret;
+    @Value("${public.client.host.url}")
+    private String publicClientHostUrl;
+    @Value("${public.client.id}")
+    private String publicClientID;
 
     private final Oauth2AccessTokenCustomizer oauth2AccessTokenCustomizer;
     private final CustomUserDetailsService customUserDetailsService;
@@ -61,6 +71,7 @@ public class SecurityConfig {
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
 
+        // * API Gateway Client
         RegisteredClient gatewayClient = RegisteredClient
                 .withId(UUID.randomUUID().toString())
                 .clientId(gatewayClientID)
@@ -74,7 +85,27 @@ public class SecurityConfig {
                 .scope("profile")
                 .scope("email")
                 .build();
-        return new InMemoryRegisteredClientRepository(gatewayClient);
+
+        // * Public Client (SPA)
+        RegisteredClient publicWebClient = RegisteredClient
+                .withId(UUID.randomUUID().toString())
+                .clientId(publicClientID)
+                .clientAuthenticationMethod(ClientAuthenticationMethod.NONE) // Public client does not use client secret
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                .redirectUri(publicClientHostUrl + "/callback")
+                .postLogoutRedirectUri(publicClientHostUrl + "/")
+                .scope(OidcScopes.OPENID)
+                .scope("profile")
+                .scope("email")
+                .clientSettings(ClientSettings.builder().requireProofKey(true).build())
+                .tokenSettings(
+                        TokenSettings.builder()
+                                .reuseRefreshTokens(false)
+                                .build()
+                )
+                .build();
+        return new InMemoryRegisteredClientRepository(gatewayClient, publicWebClient);
     }
 
     @Bean
@@ -82,14 +113,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    OAuth2TokenGenerator<OAuth2Token> tokenGenerator(JWKSource<SecurityContext> jwkSource) {
-        JwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
-        JwtGenerator jwtAccessTokenGenerator = new JwtGenerator(jwtEncoder);
-        jwtAccessTokenGenerator.setJwtCustomizer(oauth2AccessTokenCustomizer);
-
-        return new DelegatingOAuth2TokenGenerator(jwtAccessTokenGenerator);
-    }
 
     @Bean
     @Order(1)
@@ -98,13 +121,26 @@ public class SecurityConfig {
                 OAuth2AuthorizationServerConfigurer.authorizationServer();
 
         http
+                .cors(Customizer.withDefaults())
                 .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
                 .with(authorizationServerConfigurer, authorizationServer ->
-                        authorizationServer.oidc(Customizer.withDefaults())
+                        authorizationServer
+                                .oidc(Customizer.withDefaults())
+                                .clientAuthentication(clientAuthenticationConfigurer ->
+                                        clientAuthenticationConfigurer
+                                                .authenticationConverter(new PublicClientRefreshTokenAuthenticationConverter())
+                                                .authenticationProvider(
+                                                        new PublicClientRefreshTokenAuthenticationProvider(
+                                                                registeredClientRepository(),
+                                                                new InMemoryOAuth2AuthorizationService()
+                                                        )
+                                                )
+                                )
                 )
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated());
 
         http    // If any errors occur redirect user to login page
+                // ?: Should custom cors configuration be applied here?
                 .exceptionHandling(exceptions ->
                         exceptions.defaultAuthenticationEntryPointFor(
                                 new LoginUrlAuthenticationEntryPoint("/login"),
@@ -121,6 +157,7 @@ public class SecurityConfig {
     @Order(2) // security filter chain for the rest of your application and any custom endpoints you may have
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(Customizer.withDefaults())
                 .formLogin(Customizer.withDefaults()) // Enable form login
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated());
 
@@ -129,13 +166,47 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-            log.info("SecurityConfig1: Configuring AuthenticationManager");
-            AuthenticationManagerBuilder authenticationManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-            authenticationManagerBuilder
-                    .userDetailsService(customUserDetailsService)
-                    .passwordEncoder(passwordEncoder());
-            log.info("SecuriityConfig2: AuthenticationManager configured with CustomUserDetailsService");
-            return authenticationManagerBuilder.build();
+        log.info("SecurityConfig1: Configuring AuthenticationManager");
+        AuthenticationManagerBuilder authenticationManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+        authenticationManagerBuilder
+                .userDetailsService(customUserDetailsService)
+                .passwordEncoder(passwordEncoder());
+        log.info("SecuriityConfig2: AuthenticationManager configured with CustomUserDetailsService");
+        return authenticationManagerBuilder.build();
+    }
+
+    // * CORS configuration to allow requests from the public client (SPA)
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration config = new CorsConfiguration();
+        config.addAllowedOrigin(publicClientHostUrl);
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
+        config.setAllowCredentials(true);
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
+    //@Bean
+    //OAuth2TokenGenerator<OAuth2Token> tokenGenerator(JWKSource<SecurityContext> jwkSource) {
+    //    JwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
+    //    JwtGenerator jwtAccessTokenGenerator = new JwtGenerator(jwtEncoder);
+    //    jwtAccessTokenGenerator.setJwtCustomizer(oauth2AccessTokenCustomizer);
+    //
+    //    return new DelegatingOAuth2TokenGenerator(jwtAccessTokenGenerator);
+    //}
+
+    @Bean
+    OAuth2TokenGenerator<OAuth2Token> tokenGenerator(JWKSource<SecurityContext> jwkSource){
+        JwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
+        JwtGenerator jwtAccessTokenGenerator = new JwtGenerator(jwtEncoder);
+        jwtAccessTokenGenerator.setJwtCustomizer(oauth2AccessTokenCustomizer);
+
+        return new DelegatingOAuth2TokenGenerator(
+                jwtAccessTokenGenerator,
+                new OAuth2PublicClientRefreshTokenGenerator() // add customized refresh token generator
+        );
     }
 
 }

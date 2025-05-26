@@ -8,6 +8,12 @@ gateway:
     secret: gateway-secret
     host:
       url: http://localhost:8100
+
+public:
+  client:
+    id: public-client
+    host:
+      url: http://localhost:5173
 ####################
 
 server:
