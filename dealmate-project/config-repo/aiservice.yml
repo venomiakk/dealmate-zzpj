@@ -5,3 +5,13 @@ server:
   port: 8103
 
 
+spring:
+  ai:
+    openai:
+      api-key: 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
+
+base_url: https://api.groq.com/openai
+ai_model:  llama3-70b-8192
+ai_temperature:  0.7
+
+
