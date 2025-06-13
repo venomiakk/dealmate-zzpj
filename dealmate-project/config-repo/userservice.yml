@@ -4,6 +4,10 @@ test:
 server:
   port: 8102
 
+springdoc:
+    api-docs:
+      path: /api-docs
+
 spring:
   config:
     import: dbconnection.yml
