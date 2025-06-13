@@ -14,6 +14,16 @@ const router = createRouter({
             name: 'callback',
             component: () => import('../views/CallbackView.vue'),
         },
+        {
+            path: '/profile',
+            name: 'profile',
+            component: () => import('../views/ProfileView.vue'),
+        },
+        {
+            path: '/register',
+            name: 'register',
+            component: () => import('../views/RegisterForm.vue'),
+        },
     ],
 })
 

@@ -1,7 +1,13 @@
 <template>
-    <router-view></router-view>
+    <div>
+        <Navbar />
+        <main class="container mt-4">
+            <router-view></router-view>
+        </main>
+    </div>
 </template>
 
 <script setup>
-// App component nie potrzebuje logiki
+import Navbar from './components/NavBar.vue'
 </script>
+
