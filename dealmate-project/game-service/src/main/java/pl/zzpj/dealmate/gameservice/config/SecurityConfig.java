@@ -21,7 +21,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         //.requestMatchers("/user/register").permitAll()
-                        .requestMatchers("/test/authtest").authenticated()
+                        .requestMatchers("/game/*").authenticated()
                         .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(resource -> resource

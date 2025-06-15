@@ -50,6 +50,22 @@ spring:
             - StripPrefix=1
             - TokenRelay
 
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:5173" # frontend origin
+            allowedMethods:
+              - GET
+              - POST
+              - OPTIONS
+              - PUT
+              - DELETE
+            allowedHeaders:
+              - Authorization
+              - Content-Type
+            allowCredentials: true
+
+
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
