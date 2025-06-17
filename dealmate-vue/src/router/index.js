@@ -15,7 +15,7 @@ const router = createRouter({
             component: () => import('../views/CallbackView.vue'),
         },
         {
-            path: '/profile',
+            path: '/profile/:login?',
             name: 'profile',
             component: () => import('../views/ProfileView.vue'),
         },
@@ -23,6 +23,11 @@ const router = createRouter({
             path: '/register',
             name: 'register',
             component: () => import('../views/RegisterForm.vue'),
+        },
+        {
+            path: '/profile/edit',
+            name: 'edit-profile',
+            component: () => import('../views/EditProfileView.vue'),
         },
     ],
 })

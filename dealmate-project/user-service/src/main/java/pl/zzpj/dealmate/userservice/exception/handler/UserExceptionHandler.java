@@ -4,10 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithEmailDoesntExistException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithEmailExistsException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginDoesntExistException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginExistsException;
+import pl.zzpj.dealmate.userservice.exception.custom.*;
 
 @RestControllerAdvice
 public class UserExceptionHandler {
@@ -30,5 +27,10 @@ public class UserExceptionHandler {
     @ExceptionHandler(UserWithEmailDoesntExistException.class)
     public ResponseEntity<String> handleUserWithEmailDoesntExistException(UserWithEmailDoesntExistException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(NoUsernameInRequest.class)
+    public ResponseEntity<String> handleNoUsernameInRequestException(NoUsernameInRequest ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }

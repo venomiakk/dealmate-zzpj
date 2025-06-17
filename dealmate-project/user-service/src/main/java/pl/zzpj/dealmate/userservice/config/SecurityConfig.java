@@ -21,10 +21,10 @@ public class SecurityConfig {
         http
                 // * Disable CSRF protection for testing purposes
                 // * POST requests are not working with CSRF enabled
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                //.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
-                        //.requestMatchers("/user/register").permitAll()
+                        .requestMatchers("/user/register").permitAll()
                         .requestMatchers("/test/authtest").authenticated()
                         .anyRequest().permitAll()
                 )
@@ -35,16 +35,16 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOrigin("http://localhost:5173");
-        configuration.addAllowedMethod("*");
-        configuration.addAllowedHeader("*");
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+    //@Bean
+    //public CorsConfigurationSource corsConfigurationSource() {
+    //    CorsConfiguration configuration = new CorsConfiguration();
+    //    configuration.addAllowedOrigin("http://localhost:5173");
+    //    configuration.addAllowedMethod("*");
+    //    configuration.addAllowedHeader("*");
+    //    configuration.setAllowCredentials(true);
+    //
+    //    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    //    source.registerCorsConfiguration("/**", configuration);
+    //    return source;
+    //}
 }

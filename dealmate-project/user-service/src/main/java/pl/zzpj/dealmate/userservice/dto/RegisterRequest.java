@@ -1,4 +1,4 @@
-package pl.zzpj.dealmate.userservice.dto.request;
+package pl.zzpj.dealmate.userservice.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

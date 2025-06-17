@@ -42,6 +42,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import pl.zzpj.dealmate.authserver.service.CustomUserDetailsService;
 
+import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -101,6 +103,7 @@ public class SecurityConfig {
                 .clientSettings(ClientSettings.builder().requireProofKey(true).build())
                 .tokenSettings(
                         TokenSettings.builder()
+                                .accessTokenTimeToLive(Duration.ofHours(1))
                                 .reuseRefreshTokens(false)
                                 .build()
                 )
@@ -180,7 +183,9 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOrigin(publicClientHostUrl);
+        //config.addAllowedOrigin(publicClientHostUrl);
+        //config.setAllowedOrigins(List.of(publicClientHostUrl, gatewayClientHostUrl));
+        config.setAllowedOriginPatterns(List.of("*"));
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.setAllowCredentials(true);

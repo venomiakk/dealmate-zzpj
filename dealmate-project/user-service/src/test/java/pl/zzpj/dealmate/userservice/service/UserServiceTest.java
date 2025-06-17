@@ -6,12 +6,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithEmailDoesntExistException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithEmailExistsException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginDoesntExistException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginExistsException;
+import pl.zzpj.dealmate.userservice.dto.UpdateUserRequest;
+import pl.zzpj.dealmate.userservice.exception.custom.*;
+import pl.zzpj.dealmate.userservice.model.ECountryCodes;
 import pl.zzpj.dealmate.userservice.model.UserEntity;
-import pl.zzpj.dealmate.userservice.dto.request.RegisterRequest;
+import pl.zzpj.dealmate.userservice.dto.RegisterRequest;
 import pl.zzpj.dealmate.userservice.repository.UserRepository;
 
 import java.util.Optional;
@@ -137,5 +136,70 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.getUserByEmail(email))
                 .isInstanceOf(UserWithEmailDoesntExistException.class)
                 .hasMessage("User with email " + email + " doesn't exist!");
+    }
+
+    @Test
+    void shouldUpdateUserDataSuccessfully() {
+        // Given
+        UpdateUserRequest updateRequest = new UpdateUserRequest("testUser", "NewFirstName",
+                "NewLastName", ECountryCodes.PL);
+        UserEntity existingUser = new UserEntity("testUser", "NewFirstName",
+                "NewLastName", ECountryCodes.PL);
+
+        // When
+        when(userRepository.findByUsername(updateRequest.username())).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(UserEntity.class))).thenReturn(existingUser);
+        UserEntity updatedUser = userService.updateUserData(updateRequest);
+        // Then
+        assertThat(updatedUser.getUsername()).isEqualTo(updateRequest.username());
+        assertThat(updatedUser.getFirstName()).isEqualTo(updateRequest.firstName());
+        assertThat(updatedUser.getLastName()).isEqualTo(updateRequest.lastName());
+        assertThat(updatedUser.getCountryCode()).isEqualTo(updateRequest.countryCode());
+
+    }
+
+    @Test
+    void shouldThrowExceptionWhenNoUsernameInUpdateRequest() {
+        // Given
+        UpdateUserRequest updateRequest = new UpdateUserRequest(null, "NewFirstName",
+                "NewLastName", ECountryCodes.PL);
+
+        // When & Then
+        assertThatThrownBy(() -> userService.updateUserData(updateRequest))
+                .isInstanceOf(NoUsernameInRequest.class)
+                .hasMessage("Username is required in the request!");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUserWithUsernameNotFoundInUpdate() {
+        // Given
+        UpdateUserRequest updateRequest = new UpdateUserRequest("nonExistentUser", "NewFirstName",
+                "NewLastName", ECountryCodes.PL);
+
+        // When
+        when(userRepository.findByUsername(updateRequest.username())).thenReturn(Optional.empty());
+
+        // Then
+        assertThatThrownBy(() -> userService.updateUserData(updateRequest))
+                .isInstanceOf(UserWithLoginDoesntExistException.class)
+                .hasMessage("User with username " + updateRequest.username() + " doesn't exist!");
+    }
+
+    @Test
+    void shouldUpdateUserDataWithNullFields() {
+        // Given
+        UpdateUserRequest updateRequest = new UpdateUserRequest("testUser", null, null, null);
+        UserEntity existingUser = new UserEntity("testUser", "OldFirstName", "OldLastName", ECountryCodes.PL);
+
+        // When
+        when(userRepository.findByUsername(updateRequest.username())).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(UserEntity.class))).thenReturn(existingUser);
+        UserEntity updatedUser = userService.updateUserData(updateRequest);
+
+        // Then
+        assertThat(updatedUser.getUsername()).isEqualTo(updateRequest.username());
+        assertThat(updatedUser.getFirstName()).isEqualTo(existingUser.getFirstName());
+        assertThat(updatedUser.getLastName()).isEqualTo(existingUser.getLastName());
+        assertThat(updatedUser.getCountryCode()).isEqualTo(existingUser.getCountryCode());
     }
 }
