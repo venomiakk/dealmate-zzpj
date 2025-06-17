@@ -38,7 +38,7 @@ const fetchRooms = async () => {
         rooms.value = response.data
     } catch (error) {
         console.error('Error fetching rooms:', error)
-        alert('Failed to fetch rooms. Check console for details.')
+        // alert('Failed to fetch rooms. Check console for details.')
     }
 }
 

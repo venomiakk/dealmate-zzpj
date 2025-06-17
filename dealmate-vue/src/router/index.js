@@ -15,7 +15,7 @@ const router = createRouter({
             component: () => import('../views/CallbackView.vue'),
         },
         {
-            path: '/profile',
+            path: '/profile/:login?',
             name: 'profile',
             component: () => import('../views/ProfileView.vue'),
         },

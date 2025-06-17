@@ -47,6 +47,9 @@ public class UserEntity {
     @Enumerated(EnumType.STRING)
     private ECountryCodes countryCode;
 
+    @Column(name = "credits")
+    private Long credits = 10000L;
+
     public UserEntity(@NotBlank @Size(min = 3, max = 20) String username, @NotBlank @Size(max = 50) String email,
                       @NotBlank String password) {
         this.username = username;

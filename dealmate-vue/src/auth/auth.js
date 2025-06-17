@@ -19,6 +19,7 @@ export const authState = reactive({
     user: null,
     isAuthenticated: false,
     isLoading: true,
+    login: null,
 })
 
 // Funkcje auth
@@ -28,6 +29,7 @@ export const auth = {
             const user = await userManager.getUser()
             authState.user = user
             authState.isAuthenticated = !!user && !user.expired
+            authState.login = user?.profile?.sub || null
         } catch (error) {
             console.error('Auth init error:', error)
         } finally {
@@ -43,6 +45,7 @@ export const auth = {
         const user = await userManager.signinRedirectCallback()
         authState.user = user
         authState.isAuthenticated = true
+        authState.login = user?.profile?.sub || null
         // Usuń parametry z URL
         window.history.replaceState({}, document.title, window.location.pathname)
     },
