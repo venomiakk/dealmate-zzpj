@@ -62,4 +62,11 @@ public class UserEntity {
     public UserEntity() {
 
     }
+
+    public UserEntity(String username, String lastName, String firstName, ECountryCodes cc) {
+        this.username = username;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.countryCode = cc;
+    }
 }

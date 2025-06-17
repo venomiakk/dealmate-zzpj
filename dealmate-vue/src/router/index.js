@@ -24,6 +24,11 @@ const router = createRouter({
             name: 'register',
             component: () => import('../views/RegisterForm.vue'),
         },
+        {
+            path: '/profile/edit',
+            name: 'edit-profile',
+            component: () => import('../views/EditProfileView.vue'),
+        },
     ],
 })
 

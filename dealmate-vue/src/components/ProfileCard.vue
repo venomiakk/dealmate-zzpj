@@ -82,11 +82,27 @@
                                         <strong>Nationality:</strong>
                                     </div>
                                     <div class="col-sm-8">
-                                        <!-- Możesz stworzyć zmienną computed w <script setup> i użyć jej tutaj -->
-                                        <img
-                                            v-if="userProfile.countryCode"
-                                            :src="`https://flagsapi.com/${userProfile.countryCode}/flat/64.png`"
-                                        />
+                                        <div v-if="countryInfo" class="d-flex align-items-center">
+                                            <a
+                                                :href="countryInfo.wikiUrl"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="text-decoration-none d-flex align-items-center"
+                                                :title="`Learn more about ${countryInfo.name}`"
+                                            >
+                                                <img
+                                                    :src="`https://flagsapi.com/${userProfile.countryCode}/flat/64.png`"
+                                                    :alt="`${countryInfo.name} flag`"
+                                                    class="me-2 flag-img"
+                                                />
+                                                <span class="country-name">{{
+                                                    countryInfo.name
+                                                }}</span>
+                                                <i
+                                                    class="fas fa-external-link-alt ms-2 text-muted small"
+                                                ></i>
+                                            </a>
+                                        </div>
                                         <p
                                             v-else
                                             class="d-flex align-items-center h-100 mb-0"
@@ -114,11 +130,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { authState, auth } from '../auth/auth.js'
 import { userService } from '@/api/endpoints'
 import axios from 'axios'
+import { countries } from 'countries-list'
 
 // Props
 const props = defineProps({
@@ -141,6 +158,19 @@ const error = ref(null)
 
 // Default avatar
 const defaultAvatar = 'https://placehold.co/600x400?text=Profile+Picture'
+
+// Computed property for country info
+const countryInfo = computed(() => {
+    if (!userProfile.value?.countryCode) return null
+
+    const countryData = countries[userProfile.value.countryCode]
+    if (!countryData) return null
+
+    return {
+        name: countryData.name,
+        wikiUrl: `https://en.wikipedia.org/wiki/${countryData.name.replace(/\s+/g, '_')}`,
+    }
+})
 
 // Methods
 const fetchUserProfile = async () => {
@@ -260,6 +290,32 @@ onMounted(async () => {
 
 .badge {
     font-size: 0.875em;
+}
+
+.flag-img {
+    width: 48px;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.flag-img:hover {
+    transform: scale(1.05);
+}
+
+.country-name {
+    color: #495057;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+a:hover .country-name {
+    color: #007bff;
+}
+
+a:hover .flag-img {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 @media (max-width: 768px) {

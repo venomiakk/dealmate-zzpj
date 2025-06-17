@@ -2,10 +2,8 @@ package pl.zzpj.dealmate.userservice.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithEmailDoesntExistException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithEmailExistsException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginDoesntExistException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginExistsException;
+import pl.zzpj.dealmate.userservice.dto.UpdateUserRequest;
+import pl.zzpj.dealmate.userservice.exception.custom.*;
 import pl.zzpj.dealmate.userservice.model.UserEntity;
 import pl.zzpj.dealmate.userservice.dto.RegisterRequest;
 import pl.zzpj.dealmate.userservice.repository.UserRepository;
@@ -43,5 +41,24 @@ public class UserService {
     public UserEntity getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserWithEmailDoesntExistException(email));
+    }
+
+    public UserEntity updateUserData(UpdateUserRequest updateUserRequest){
+        if (updateUserRequest.username() == null){
+            throw new NoUsernameInRequest();
+        }
+        UserEntity user = userRepository.findByUsername(updateUserRequest.username())
+                .orElseThrow(() -> new UserWithLoginDoesntExistException(updateUserRequest.username()));
+        if (updateUserRequest.firstName() != null) {
+            user.setFirstName(updateUserRequest.firstName());
+        }
+        if (updateUserRequest.lastName() != null) {
+            user.setLastName(updateUserRequest.lastName());
+        }
+        // TODO: Here we probably should validate the country code
+        if (updateUserRequest.countryCode() != null) {
+            user.setCountryCode(updateUserRequest.countryCode());
+        }
+        return userRepository.save(user);
     }
 }

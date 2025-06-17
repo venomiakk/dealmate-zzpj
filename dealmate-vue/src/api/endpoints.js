@@ -4,7 +4,9 @@ export const API_LOGIN_URL = 'http://127.0.0.1:9000/login'
 
 export const userService = {
     register: `${API_GATEWAY_URL}/userservice/user/register`,
-    fetchUserDataByLogin: (login) => `${API_GATEWAY_URL}/userservice/user/getuser/username/${login}`,
+    fetchUserDataByLogin: (login) =>
+        `${API_GATEWAY_URL}/userservice/user/getuser/username/${login}`,
+    updateUserData: (login) => `${API_GATEWAY_URL}/userservice/user/update/${login}`,
 }
 
 export const gameService = {

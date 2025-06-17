@@ -7,10 +7,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithEmailDoesntExistException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithEmailExistsException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginDoesntExistException;
-import pl.zzpj.dealmate.userservice.exception.custom.UserWithLoginExistsException;
+import pl.zzpj.dealmate.userservice.dto.UpdateUserRequest;
+import pl.zzpj.dealmate.userservice.exception.custom.*;
+import pl.zzpj.dealmate.userservice.model.ECountryCodes;
 import pl.zzpj.dealmate.userservice.model.UserEntity;
 import pl.zzpj.dealmate.userservice.dto.RegisterRequest;
 import pl.zzpj.dealmate.userservice.service.UserService;
@@ -161,7 +160,45 @@ class UserControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(result -> {
                     String responseBody = result.getResponse().getContentAsString();
-                    assertTrue(responseBody.contains("User with email " + email + " doesn't exist!"));
+                    assertThat(responseBody).contains("User with email " + email + " doesn't exist!");
+                });
+    }
+
+    @Test
+    void shouldUpdateUserSuccessfully() throws Exception {
+        // Given
+        UpdateUserRequest updateRequest = new UpdateUserRequest("username", "John", "Doe",
+                ECountryCodes.PL);
+        UserEntity updatedUser = new UserEntity(updateRequest.username(), "John", "Doe", ECountryCodes.PL);
+        // When & Then
+        when(userService.updateUserData(updateRequest)).thenReturn(updatedUser);
+        mockMvc.perform(patch("/user/update/{username}", updateRequest.username())
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    String responseBody = result.getResponse().getContentAsString();
+                    assertThat(responseBody).isEqualTo("User updated successfully");
+                });
+    }
+
+    @Test
+    void shouldThrowNoUsernameInRequest() throws Exception {
+        // Given
+        UpdateUserRequest updateRequest = new UpdateUserRequest(null, "John", "Doe", ECountryCodes.PL);
+
+        // When
+        when(userService.updateUserData(updateRequest))
+                .thenThrow(new NoUsernameInRequest());
+
+        // Then
+        mockMvc.perform(patch("/user/update/{username}", "nonExistentUser")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> {
+                    String responseBody = result.getResponse().getContentAsString();
+                    assertThat(responseBody).contains("Username is required in the request!");
                 });
     }
 }
