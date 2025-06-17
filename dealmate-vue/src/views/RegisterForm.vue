@@ -105,7 +105,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { gateway, userService, API_LOGIN_URL } from '@/api/endpoints'
+import { userService, API_LOGIN_URL } from '@/api/endpoints'
 import axios from 'axios'
 
 // Form data
@@ -180,6 +180,7 @@ const handleSubmit = async () => {
         const response = await axios.post(userService.register, registrationData, {
             timeout: 5000, // 5 seconds timeout
         })
+        console.log('Registration response:', response)
         if (response.status === 201) {
             successMessage.value = 'Account created successfully! Redirecting to login...'
             setTimeout(() => {

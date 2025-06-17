@@ -7,7 +7,9 @@
                 <router-link to="/" class="nav-link me-3">Home</router-link>
 
                 <div v-if="authState.isAuthenticated" class="d-flex align-items-center">
-                    <router-link to="/profile" class="nav-link me-3">{{ authState.user.profile.sub }}</router-link>
+                    <router-link to="/profile" class="nav-link me-3">{{
+                        authState.user.profile.sub
+                    }}</router-link>
                     <button @click="logout" class="btn btn-outline-danger btn-sm">Logout</button>
                 </div>
                 <div v-else>

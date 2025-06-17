@@ -7,6 +7,9 @@ server:
 spring:
   security:
     oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://127.0.0.1:9000
       client:
         provider:
           platform-auth-server:
@@ -50,26 +53,26 @@ spring:
             - StripPrefix=1
             - TokenRelay
 
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: "http://localhost:5173" # frontend origin
-            allowedMethods:
-              - GET
-              - POST
-              - OPTIONS
-              - PUT
-              - DELETE
-            allowedHeaders:
-              - Authorization
-              - Content-Type
-            allowCredentials: true
+#      globalcors:
+#        corsConfigurations:
+#          '[/**]':
+#            allowedOrigins: "http://localhost:5173" # frontend origin
+#            allowedMethods:
+#              - GET
+#              - POST
+#              - OPTIONS
+#              - PUT
+#              - DELETE
+#            allowedHeaders:
+#              - Authorization
+#              - Content-Type
+#            allowCredentials: true
 
 
 logging:
   level:
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.web: DEBUG
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.web: TRACE
 
 # * turn off the discovery client for testing purposes
 #eureka:

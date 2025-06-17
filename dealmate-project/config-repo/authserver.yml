@@ -26,6 +26,10 @@ spring:
       authserver:
         issuer: http://authserver:9000
 
+logging:
+  level:
+    org.springframework.web: TRACE
+    org.springframework.security: TRACE
 # * turn off the discovery client for testing purposes
 #eureka:
 #  client:

@@ -8,6 +8,7 @@ const config = {
     response_type: 'code',
     scope: 'openid profile email',
     post_logout_redirect_uri: 'http://localhost:5173/',
+    automaticSilentRenew: true,
 }
 
 // Manager użytkowników
