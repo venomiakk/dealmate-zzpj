@@ -23,10 +23,3 @@ export const VISIBILITY_OPTIONS = [
         icon: 'fas fa-lock',
     },
 ]
-
-export const DEFAULT_ROOM_CONFIG = {
-    name: '',
-    gameType: '',
-    maxPlayers: 4,
-    isPublic: true,
-}
