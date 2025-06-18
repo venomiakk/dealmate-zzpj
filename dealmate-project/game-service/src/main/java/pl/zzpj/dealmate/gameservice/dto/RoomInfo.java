@@ -12,6 +12,7 @@ public record RoomInfo(
         EGameType gameType,
         int maxPlayers,
         boolean isPublic,
-        String ownerLogin
+        String ownerLogin,
+        Long entryFee
 ) {
 }

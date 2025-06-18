@@ -59,6 +59,26 @@
                         </select>
                     </div>
 
+                    <!-- Nowe pole Entry Fee -->
+                    <div class="mb-3">
+                        <label for="entryFee" class="form-label"> Entry Fee </label>
+                        <div class="input-group">
+                            <input
+                                v-model.number="roomConfig.entryFee"
+                                type="number"
+                                id="entryFee"
+                                class="form-control"
+                                placeholder="0"
+                                min="0"
+                                max="10000"
+                                step="1"
+                            />
+                        </div>
+                        <small class="form-text text-muted">
+                            Set to 0 for free games. Maximum 10,000.
+                        </small>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label">Room Visibility</label>
                         <div
@@ -116,9 +136,7 @@ const emit = defineEmits(['close', 'create'])
 
 // Configuration options
 const gameTypes = ref(GAME_TYPES)
-
 const maxPlayersOptions = ref(MAX_PLAYERS_OPTIONS)
-
 const visibilityOptions = ref(VISIBILITY_OPTIONS)
 
 const roomConfig = ref({
@@ -127,10 +145,13 @@ const roomConfig = ref({
     gameType: '',
     maxPlayers: 4,
     isPublic: true,
+    entryFee: 0, // Nowe pole
 })
 
 const isFormValid = computed(() => {
-    return roomConfig.value.name.trim() !== '' && roomConfig.value.gameType !== ''
+    const isBasicValid = roomConfig.value.name.trim() !== '' && roomConfig.value.gameType !== ''
+    const isEntryFeeValid = roomConfig.value.entryFee >= 0 && roomConfig.value.entryFee <= 10000
+    return isBasicValid && isEntryFeeValid
 })
 
 const closeModal = () => {
@@ -140,7 +161,14 @@ const closeModal = () => {
 
 const handleSubmit = () => {
     if (!isFormValid.value) return
-    emit('create', { ...roomConfig.value })
+
+    // Upewnij się że entryFee jest liczbą
+    const configToSubmit = {
+        ...roomConfig.value,
+        entryFee: Number(roomConfig.value.entryFee) || 0,
+    }
+
+    emit('create', configToSubmit)
     closeModal()
 }
 
@@ -151,6 +179,7 @@ const resetForm = () => {
         gameType: gameTypes.value[0].value,
         maxPlayers: 4,
         isPublic: true,
+        entryFee: 0, // Reset entry fee
     }
 }
 
@@ -166,7 +195,38 @@ watch(
 </script>
 
 <style scoped>
-/* Modal Styles */
+/* Existing styles... */
+
+/* Dodatkowe style dla input-group */
+.input-group {
+    display: flex;
+}
+
+.input-group-text {
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+    border-right: 0;
+    border-radius: 0.375rem 0 0 0.375rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    display: flex;
+    align-items: center;
+}
+
+.input-group .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-text {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Existing modal styles... */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -298,5 +358,9 @@ watch(
 .btn-secondary:hover {
     background-color: #5c636a;
     border-color: #565e64;
+}
+
+.text-muted {
+    color: #6c757d;
 }
 </style>

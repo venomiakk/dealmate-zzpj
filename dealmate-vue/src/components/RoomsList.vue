@@ -68,7 +68,7 @@ const createRoom = async (roomConfig) => {
         await fetchRooms()
     } catch (error) {
         console.error('Error creating room:', error)
-        alert('Failed to create room. Check console for details.')
+        alert('Failed to create room.')
     }
 }
 
@@ -84,7 +84,7 @@ const joinRoom = async (room) => {
         })
     } catch (error) {
         console.error(`Error joining room ${room.roomId}:`, error)
-        alert('Failed to join room. Check console for details.')
+        alert('Failed to join room.')
     }
 }
 

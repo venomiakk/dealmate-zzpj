@@ -201,4 +201,45 @@ class UserControllerTest {
                     assertThat(responseBody).contains("Username is required in the request!");
                 });
     }
+
+    @Test
+    void shouldUpdateUserCreditsSuccessfully() throws Exception {
+        // Given
+        String username = "username";
+        Long credits = 100L;
+        UserEntity user = new UserEntity(username, "aa", "bb");
+        user.setCredits(credits);
+        // When
+        when(userService.updateUserCredits(username, credits)).thenReturn(user);
+        // Then
+        mockMvc.perform(patch("/user/update/credits/{username}", username)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(credits)))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    String responseBody = result.getResponse().getContentAsString();
+                    assertThat(responseBody).isEqualTo("User credits updated successfully");
+                });
+    }
+
+    @Test
+    void shouldThowUserWithLoginDoesntExistExceptionWhenUpdatingCredits() throws Exception {
+        // Given
+        String username = "nonExistentUser";
+        Long credits = 100L;
+
+        // When
+        when(userService.updateUserCredits(username, credits))
+                .thenThrow(new UserWithLoginDoesntExistException(username));
+
+        // Then
+        mockMvc.perform(patch("/user/update/credits/{username}", username)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(credits)))
+                .andExpect(status().isNotFound())
+                .andExpect(result -> {
+                    String responseBody = result.getResponse().getContentAsString();
+                    assertThat(responseBody).contains("User with username " + username + " doesn't exist!");
+                });
+    }
 }

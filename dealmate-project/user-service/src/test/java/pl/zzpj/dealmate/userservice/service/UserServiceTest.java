@@ -202,4 +202,70 @@ class UserServiceTest {
         assertThat(updatedUser.getLastName()).isEqualTo(existingUser.getLastName());
         assertThat(updatedUser.getCountryCode()).isEqualTo(existingUser.getCountryCode());
     }
+
+    @Test
+    void shouldAddUserCreditsSuccessfully() {
+        // Given
+        String username = "testUser";
+        Long creditsToAdd = 500L;
+        Long oldCredits = 1000L;
+        UserEntity existingUser = new UserEntity(username, "email", "password");
+        existingUser.setCredits(oldCredits);
+        // When
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(UserEntity.class))).thenReturn(existingUser);
+        UserEntity updatedUser = userService.updateUserCredits(username, creditsToAdd);
+        // Then
+        assertThat(updatedUser.getUsername()).isEqualTo(username);
+        assertThat(updatedUser.getCredits()).isEqualTo(oldCredits + creditsToAdd);
+    }
+
+    @Test
+    void shouldSubtractUserCreditsSuccessfully() {
+        // Given
+        String username = "testUser";
+        Long creditsToSubtract = -500L;
+        Long oldCredits = 1000L;
+        UserEntity existingUser = new UserEntity(username, "email", "password");
+        existingUser.setCredits(oldCredits);
+        // When
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(UserEntity.class))).thenReturn(existingUser);
+        UserEntity updatedUser = userService.updateUserCredits(username, creditsToSubtract);
+        // Then
+        assertThat(updatedUser.getUsername()).isEqualTo(username);
+        assertThat(updatedUser.getCredits()).isEqualTo(oldCredits + creditsToSubtract);
+    }
+
+    @Test
+    void shouldSetUserCreditsToZeroIfNull() {
+        // Given
+        String username = "testUser";
+        UserEntity existingUser = new UserEntity(username, "email", "password");
+        existingUser.setCredits(null);
+
+        // When
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(UserEntity.class))).thenReturn(existingUser);
+        UserEntity updatedUser = userService.updateUserCredits(username, 0L);
+
+        // Then
+        assertThat(updatedUser.getUsername()).isEqualTo(username);
+        assertThat(updatedUser.getCredits()).isZero();
+    }
+
+    @Test
+    void shouldThowUserWithLoginDoesntExistExceptionWhenUpdatingCredits() {
+        // Given
+        String username = "nonExistentUser";
+        Long creditsToAdd = 500L;
+
+        // When
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+        // Then
+        assertThatThrownBy(() -> userService.updateUserCredits(username, creditsToAdd))
+                .isInstanceOf(UserWithLoginDoesntExistException.class)
+                .hasMessage("User with username " + username + " doesn't exist!");
+    }
 }

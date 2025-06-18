@@ -26,6 +26,8 @@ public class GameRoom implements Runnable {
     private final int maxPlayers;
     @Getter
     private final boolean isPublic;
+    @Getter
+    private final Long entryFee;
     private final Set<String> players = ConcurrentHashMap.newKeySet();
     @Getter
     private final BlockingQueue<String> events = new LinkedBlockingQueue<>();
@@ -65,6 +67,7 @@ public class GameRoom implements Runnable {
         this.gameType = request.gameType();
         this.maxPlayers = request.maxPlayers();
         this.isPublic = request.isPublic();
+        this.entryFee = request.entryFee() != null ? request.entryFee() : 0L; // Default to 0 if not provided
         this.messagingTemplate = messagingTemplate;
         if (autoStart) {
             Executors.newVirtualThreadPerTaskExecutor().submit(this);

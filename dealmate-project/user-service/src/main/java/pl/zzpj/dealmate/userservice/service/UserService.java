@@ -55,10 +55,20 @@ public class UserService {
         if (updateUserRequest.lastName() != null) {
             user.setLastName(updateUserRequest.lastName());
         }
-        // TODO: Here we probably should validate the country code
         if (updateUserRequest.countryCode() != null) {
             user.setCountryCode(updateUserRequest.countryCode());
         }
+        return userRepository.save(user);
+    }
+
+    public UserEntity updateUserCredits(String username, Long credits) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserWithLoginDoesntExistException(username));
+        if (user.getCredits() == null) {
+            user.setCredits(0L);
+        }
+        //?: This might need additional validation
+        user.setCredits(user.getCredits() + credits);
         return userRepository.save(user);
     }
 }
