@@ -29,7 +29,8 @@ class GameRoomTest {
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
                 4,
-                true);
+                true,
+                null);
         GameRoom gameRoom = new GameRoom(messagingTemplate, request, true);
         String playerId = "player1";
 
@@ -48,7 +49,8 @@ class GameRoomTest {
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
                 4,
-                true);
+                true,
+                null);
         GameRoom gameRoom = new GameRoom(messagingTemplate, request, true);
         String playerId = "player1";
         gameRoom.join(playerId);
@@ -68,7 +70,8 @@ class GameRoomTest {
                 "",
                 EGameType.TEXAS_HOLDEM,
                 4,
-                true);
+                true,
+                null);
         GameRoom gameRoom = new GameRoom(messagingTemplate, request, true);
 
         // Then
@@ -84,7 +87,8 @@ class GameRoomTest {
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
                 4,
-                true);
+                true,
+                null);
 
         // subclass GameRoom to override thread startup behavior
         class TestableGameRoom extends GameRoom {

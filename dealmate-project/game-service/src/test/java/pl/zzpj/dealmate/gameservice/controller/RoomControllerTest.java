@@ -8,11 +8,14 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import pl.zzpj.dealmate.gameservice.client.UserServiceClient;
 import pl.zzpj.dealmate.gameservice.dto.CreateRoomRequest;
+import pl.zzpj.dealmate.gameservice.dto.UserDetailsDto;
 import pl.zzpj.dealmate.gameservice.model.EGameType;
 import pl.zzpj.dealmate.gameservice.model.GameRoom;
 import pl.zzpj.dealmate.gameservice.service.RoomManager;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,6 +33,9 @@ class RoomControllerTest {
     @MockitoBean
     private RoomManager roomManager;
 
+    @MockitoBean
+    private UserServiceClient userServiceClient;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -42,7 +48,8 @@ class RoomControllerTest {
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
                 4,
-                true);
+                true,
+                0L);
         GameRoom mockRoom = mock(GameRoom.class);
         when(mockRoom.getRoomId()).thenReturn("room123");
         when(mockRoom.getJoinCode()).thenReturn("abc123");
@@ -51,6 +58,9 @@ class RoomControllerTest {
         when(mockRoom.getGameType()).thenReturn(EGameType.TEXAS_HOLDEM);
         when(mockRoom.getMaxPlayers()).thenReturn(4);
         when(mockRoom.isPublic()).thenReturn(true);
+        when(userServiceClient.getUserByUsername("player1"))
+                .thenReturn(new UserDetailsDto(1L, "player1", "","","",
+                        "", 1000L, LocalDate.now())); // 100 kredytów, wystarczy na test
 
         when(roomManager.createRoom(any(CreateRoomRequest.class))).thenReturn(mockRoom);
 
@@ -68,6 +78,9 @@ class RoomControllerTest {
     @WithMockUser(username = "playerX")
     void shouldJoinRoom() throws Exception {
         GameRoom mockRoom = mock(GameRoom.class);
+        when(userServiceClient.getUserByUsername("playerX"))
+                .thenReturn(new UserDetailsDto(1L, "playerX", "","","",
+                        "", 1000L, LocalDate.now()));
         when(roomManager.getRoomById("room123")).thenReturn(Optional.of(mockRoom));
 
         mockMvc.perform(post("/game/room123/join")
@@ -92,6 +105,9 @@ class RoomControllerTest {
     @WithMockUser(username = "playerY")
     void shouldJoinByCode() throws Exception {
         GameRoom mockRoom = mock(GameRoom.class);
+        when(userServiceClient.getUserByUsername("playerY"))
+                .thenReturn(new UserDetailsDto(1L, "playerY", "","","",
+                        "", 1000L, LocalDate.now()));
         when(roomManager.getRoomByJoinCode("code123")).thenReturn(Optional.of(mockRoom));
 
         mockMvc.perform(post("/game/join-code/code123")
@@ -100,6 +116,60 @@ class RoomControllerTest {
                 .andExpect(content().string("Player playerY joined room by code code123"));
 
         verify(mockRoom).join("playerY");
+    }
+
+    @Test
+    @WithMockUser(username = "playerY")
+    void shouldThrowWhenNonExistentUserJoinsByCode() throws Exception {
+        when(userServiceClient.getUserByUsername("playerY")).thenReturn(null);
+        when(roomManager.getRoomByJoinCode("code123")).thenReturn(Optional.of(mock(GameRoom.class)));
+
+        mockMvc.perform(post("/game/join-code/code123")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("User not found"));
+    }
+
+    @Test
+    @WithMockUser(username = "playerY")
+    void shouldThrowWhenUserHasNullCreditsWhileJoiningByCode() throws Exception {
+        GameRoom room = mock(GameRoom.class);
+        when(room.getEntryFee()).thenReturn(100L); // Wymagane 100 kredytów do wejścia
+        when(userServiceClient.getUserByUsername("playerY"))
+                .thenReturn(new UserDetailsDto(1L, "playerY", "","","",
+                        "", null, LocalDate.now())); // Null kredytów, nie wystarczy na test
+        when(roomManager.getRoomByJoinCode("code123")).thenReturn(Optional.of(room));
+
+        mockMvc.perform(post("/game/join-code/code123")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("User has no credits"));
+    }
+
+    @Test
+    @WithMockUser(username = "playerY")
+    void shouldThrowWhenUserHasInsufficientCreditsWhileJoiningByCode() throws Exception {
+        GameRoom room = mock(GameRoom.class);
+        when(room.getEntryFee()).thenReturn(100L); // Wymagane 100 kredytów do wejścia
+        when(userServiceClient.getUserByUsername("playerY"))
+                .thenReturn(new UserDetailsDto(1L, "playerY", "","","",
+                        "", 50L, LocalDate.now())); // 50 kredytów, nie wystarczy na test
+        when(roomManager.getRoomByJoinCode("code123")).thenReturn(Optional.of(room));
+
+        mockMvc.perform(post("/game/join-code/code123")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Not enough credits to join a room by code"));
+    }
+
+    @Test
+    @WithMockUser(username = "playerY")
+    void shouldThrowWhenNonExistentRoomJoinsByCode() throws Exception {
+        when(roomManager.getRoomByJoinCode("badCode")).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/game/join-code/badCode")
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -159,4 +229,117 @@ class RoomControllerTest {
                 .andExpect(jsonPath("$.players[0]").value("playerZ"))
                 .andExpect(jsonPath("$.ownerLogin").value("ownerLogin"));
     }
+
+    @Test
+    @WithMockUser(username = "playerZ")
+    void shouldThrowWhenUserNotFoundWhileJoiningRoom() throws Exception {
+        when(userServiceClient.getUserByUsername("playerZ")).thenReturn(null);
+        when(roomManager.getRoomById("room123")).thenReturn(Optional.of(mock(GameRoom.class)));
+
+        mockMvc.perform(post("/game/room123/join")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("User not found"));
+    }
+
+    @Test
+    @WithMockUser(username = "playerZ")
+    void shouldThrowWhenUserHasNullCreditsWhileJoiningRoom() throws Exception {
+        GameRoom room = mock(GameRoom.class);
+        when(room.getEntryFee()).thenReturn(100L); // Wymagane 100 kredytów do wejścia
+        when(userServiceClient.getUserByUsername("playerZ"))
+                .thenReturn(new UserDetailsDto(1L, "playerZ", "","","",
+                        "", null, LocalDate.now())); // Null kredytów, nie wystarczy na test
+        when(roomManager.getRoomById("room123")).thenReturn(Optional.of(room));
+
+        mockMvc.perform(post("/game/room123/join")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("User has no credits"));
+    }
+
+    @Test
+    @WithMockUser(username = "playerZ")
+    void shouldThrowWhenUserHasInsufficientCreditsWhileJoiningRoom() throws Exception {
+        GameRoom room = mock(GameRoom.class);
+        when(room.getEntryFee()).thenReturn(100L); // Wymagane 100 kredytów do wejścia
+        when(userServiceClient.getUserByUsername("playerZ"))
+                .thenReturn(new UserDetailsDto(1L, "playerZ", "","","",
+                        "", 50L, LocalDate.now())); // 50 kredytów, nie wystarczy na test
+        when(roomManager.getRoomById("room123")).thenReturn(Optional.of(room));
+
+        mockMvc.perform(post("/game/room123/join")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Not enough credits to join a room"));
+    }
+
+    @Test
+    @WithMockUser(username = "playerZ")
+    void shouldThrowWhenNonExistentUserCreatesRoom() throws Exception {
+        CreateRoomRequest request = new CreateRoomRequest(
+                "nonExistentUser",
+                "Test Room",
+                EGameType.TEXAS_HOLDEM,
+                4,
+                true,
+                0L);
+
+        when(userServiceClient.getUserByUsername("nonExistentUser")).thenReturn(null);
+
+        mockMvc.perform(post("/game/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("User not found"));
+    }
+
+    @Test
+    @WithMockUser(username = "playerZ")
+    void shouldThrowWhenUserHasNullCreditsWhileCreatingRoom() throws Exception {
+        CreateRoomRequest request = new CreateRoomRequest(
+                "playerZ",
+                "Test Room",
+                EGameType.TEXAS_HOLDEM,
+                4,
+                true,
+                100L); // Wymagane 100 kredytów do stworzenia pokoju
+
+        when(userServiceClient.getUserByUsername("playerZ"))
+                .thenReturn(new UserDetailsDto(1L, "playerZ", "","","",
+                        "", null, LocalDate.now())); // Null kredytów, nie wystarczy na test
+
+        mockMvc.perform(post("/game/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("User has no credits"));
+    }
+
+    @Test
+    @WithMockUser(username = "playerZ")
+    void shouldThrowWhenUserHasInsufficientCreditsWhileCreatingRoom() throws Exception {
+        CreateRoomRequest request = new CreateRoomRequest(
+                "playerZ",
+                "Test Room",
+                EGameType.TEXAS_HOLDEM,
+                4,
+                true,
+                100L); // Wymagane 100 kredytów do stworzenia pokoju
+
+        when(userServiceClient.getUserByUsername("playerZ"))
+                .thenReturn(new UserDetailsDto(1L, "playerZ", "","","",
+                        "", 50L, LocalDate.now())); // 50 kredytów, nie wystarczy na test
+
+        mockMvc.perform(post("/game/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Not enough credits to create a room"));
+    }
+
+
 }

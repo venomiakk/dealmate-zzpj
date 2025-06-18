@@ -24,7 +24,8 @@ class RoomManagerTest {
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
                 4,
-                true);
+                true,
+                null);
         // When
         GameRoom room = roomManager.createRoom(request);
 
@@ -51,7 +52,8 @@ class RoomManagerTest {
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
                 4,
-                true);
+                true,
+                null);
         GameRoom room = roomManager.createRoom(request);
 
         // When
@@ -72,7 +74,8 @@ class RoomManagerTest {
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
                 4,
-                true);
+                true,
+                null);
         GameRoom room = roomManager.createRoom(request);
 
         // When
@@ -93,7 +96,8 @@ class RoomManagerTest {
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
                 4,
-                true);
+                true,
+                null);
         GameRoom room1 = roomManager.createRoom(request);
         GameRoom room2 = roomManager.createRoom(request);
 

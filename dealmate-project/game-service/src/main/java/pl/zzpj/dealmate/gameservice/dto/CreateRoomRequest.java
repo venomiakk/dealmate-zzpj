@@ -7,6 +7,7 @@ public record CreateRoomRequest(
         String name,
         EGameType gameType,
         int maxPlayers,
-        boolean isPublic
+        boolean isPublic,
+        Long entryFee
 ) {
 }
