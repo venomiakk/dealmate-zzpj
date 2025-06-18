@@ -1,0 +1,11 @@
+package pl.zzpj.dealmate.gameservice.dto;
+
+import pl.zzpj.dealmate.gameservice.model.EGameType;
+
+public record CreateRoomRequest(
+        String name,
+        EGameType gameType,
+        int maxPlayers,
+        boolean isPublic
+) {
+}
