@@ -25,6 +25,7 @@ class GameRoomTest {
     void shouldJoinRoomSuccessfully() {
         // Given
         CreateRoomRequest request = new CreateRoomRequest(
+                "ownerLogin",
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
                 4,
@@ -43,6 +44,7 @@ class GameRoomTest {
     void shouldLeaveRoomSuccessfully() {
         // Given
         CreateRoomRequest request = new CreateRoomRequest(
+                "ownerLogin",
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
                 4,
@@ -62,7 +64,8 @@ class GameRoomTest {
     void shouldCreateRoomWithDefaultNameIfNotProvided() {
         // Given
         CreateRoomRequest request = new CreateRoomRequest(
-                null, // No name provided
+                "ownerLogin",
+                "",
                 EGameType.TEXAS_HOLDEM,
                 4,
                 true);
@@ -77,6 +80,7 @@ class GameRoomTest {
     void shouldSendEventOverWebSocketWhenEventIsAdded() throws Exception {
         // given
         CreateRoomRequest request = new CreateRoomRequest(
+                "ownerLogin",
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
                 4,

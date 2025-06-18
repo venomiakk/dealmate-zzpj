@@ -7,26 +7,34 @@
                         {{ room.name }}
                     </h5>
 
-                    <p class="card-text text-muted mb-2">{{ room.type }}</p>
+                    <p class="card-text text-muted mb-2">{{ gameTypeName }}</p>
 
                     <div class="room-details">
                         <small class="text-muted">
                             <i class="fas fa-users me-1"></i>
-                            Players: {{ room.players }} / {{ room.capacity }}
+                            Players: {{ playersCount }} / {{ room.maxPlayers }}
                         </small>
                     </div>
                 </div>
 
-                <div class="room-actions">
-                    <button
-                        @click="handleJoinRoom"
-                        class="btn btn-sm"
-                        :class="buttonClass"
-                        :disabled="isJoinDisabled"
-                        :title="buttonTooltip"
-                    >
-                        {{ buttonText }}
-                    </button>
+                <div>
+                    <div class="room-actions">
+                        <button
+                            @click="handleJoinRoom"
+                            class="btn btn-sm ms-auto"
+                            :class="buttonClass"
+                            :disabled="isJoinDisabled"
+                            :title="buttonTooltip"
+                        >
+                            {{ buttonText }}
+                        </button>
+                    </div>
+                    <div>
+                         <small class="text-muted">
+                            <i class="fas fa-users me-1"></i>
+                            Owner: {{ room.ownerLogin? room.ownerLogin : 'Unknown' }}
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -35,6 +43,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { GAME_TYPES } from '@/constants/constants'
 
 const props = defineProps({
     room: {
@@ -45,8 +54,22 @@ const props = defineProps({
 
 const emit = defineEmits(['join'])
 
+const playersCount = computed(() => {
+    if (Array.isArray(props.room.players)) {
+        return props.room.players.length
+    } else if (typeof props.room.players === 'number') {
+        return props.room.players
+    }
+    return 0
+})
+
 const isRoomFull = computed(() => {
-    return props.room.players >= props.room.capacity
+    return playersCount.value >= props.room.maxPlayers
+})
+
+const gameTypeName = computed(() => {
+    const gameType = GAME_TYPES.find(type => type.value === props.room.gameType)
+    return gameType ? gameType.label : 'Unknown Game Type'
 })
 
 const isJoinDisabled = computed(() => {
@@ -71,7 +94,7 @@ const buttonTooltip = computed(() => {
 const handleJoinRoom = () => {
     if (!isJoinDisabled.value) {
         emit('join', props.room)
-        console.log(`Joining room: ${props.room.name}`)
+        // console.log(`Joining room: ${props.room.name}`)
     }
 }
 </script>

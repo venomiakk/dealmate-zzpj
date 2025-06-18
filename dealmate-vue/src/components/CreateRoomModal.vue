@@ -25,7 +25,12 @@
 
                     <div class="mb-3">
                         <label for="gameType" class="form-label">Game Type</label>
-                        <select v-model="roomConfig.gameType" id="gameType" class="form-control" required>
+                        <select
+                            v-model="roomConfig.gameType"
+                            id="gameType"
+                            class="form-control"
+                            required
+                        >
                             <option
                                 v-for="gameType in gameTypes"
                                 :key="gameType.value"
@@ -38,7 +43,12 @@
 
                     <div class="mb-3">
                         <label for="maxPlayers" class="form-label">Maximum Players</label>
-                        <select v-model="roomConfig.maxPlayers" id="maxPlayers" class="form-control" required>
+                        <select
+                            v-model="roomConfig.maxPlayers"
+                            id="maxPlayers"
+                            class="form-control"
+                            required
+                        >
                             <option
                                 v-for="playerOption in maxPlayersOptions"
                                 :key="playerOption.value"
@@ -64,7 +74,10 @@
                                 :value="visibility.value"
                                 class="form-check-input"
                             />
-                            <label :for="visibility.value ? 'public' : 'private'" class="form-check-label">
+                            <label
+                                :for="visibility.value ? 'public' : 'private'"
+                                class="form-check-label"
+                            >
                                 <i :class="visibility.icon" class="me-2"></i>{{ visibility.label }}
                             </label>
                         </div>
@@ -74,7 +87,12 @@
 
             <div class="modal-footer">
                 <button @click="closeModal" type="button" class="btn btn-secondary">Cancel</button>
-                <button @click="handleSubmit" type="button" class="btn btn-primary" :disabled="!isFormValid">
+                <button
+                    @click="handleSubmit"
+                    type="button"
+                    class="btn btn-primary"
+                    :disabled="!isFormValid"
+                >
                     Create Room
                 </button>
             </div>
@@ -85,44 +103,26 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { authState } from '@/auth/auth'
+import { GAME_TYPES, MAX_PLAYERS_OPTIONS, VISIBILITY_OPTIONS } from '@/constants/constants'
 
 const props = defineProps({
     show: {
         type: Boolean,
-        default: false
-    }
+        default: false,
+    },
 })
 
 const emit = defineEmits(['close', 'create'])
 
 // Configuration options
-const gameTypes = ref([
-    { value: 'TEXAS_HOLDEM', label: 'Texas Holdem' },
-    { value: 'FIVE_CARDS_DRAW', label: 'Five Cards Draw' },
-])
+const gameTypes = ref(GAME_TYPES)
 
-const maxPlayersOptions = ref([
-    { value: 2, label: '2 Players' },
-    { value: 3, label: '3 Players' },
-    { value: 4, label: '4 Players' },
-    { value: 6, label: '6 Players' },
-    { value: 8, label: '8 Players' }
-])
+const maxPlayersOptions = ref(MAX_PLAYERS_OPTIONS)
 
-const visibilityOptions = ref([
-    {
-        value: true,
-        label: 'Public - Anyone can join',
-        icon: 'fas fa-globe'
-    },
-    {
-        value: false,
-        label: 'Private - Invite only',
-        icon: 'fas fa-lock'
-    }
-])
+const visibilityOptions = ref(VISIBILITY_OPTIONS)
 
 const roomConfig = ref({
+    ownerLogin: authState.login,
     name: '',
     gameType: '',
     maxPlayers: 4,
@@ -146,6 +146,7 @@ const handleSubmit = () => {
 
 const resetForm = () => {
     roomConfig.value = {
+        ownerLogin: authState.login,
         name: authState.login ? `${authState.login}'s Room` : 'New Room',
         gameType: gameTypes.value[0].value,
         maxPlayers: 4,
@@ -154,11 +155,14 @@ const resetForm = () => {
 }
 
 // Reset form when modal is opened
-watch(() => props.show, (newVal) => {
-    if (newVal) {
-        resetForm()
-    }
-})
+watch(
+    () => props.show,
+    (newVal) => {
+        if (newVal) {
+            resetForm()
+        }
+    },
+)
 </script>
 
 <style scoped>

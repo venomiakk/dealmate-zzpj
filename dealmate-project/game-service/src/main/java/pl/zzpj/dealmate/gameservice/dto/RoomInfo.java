@@ -11,6 +11,7 @@ public record RoomInfo(
         String name,
         EGameType gameType,
         int maxPlayers,
-        boolean isPublic
+        boolean isPublic,
+        String ownerLogin
 ) {
 }

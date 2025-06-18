@@ -32,7 +32,7 @@ public class RoomController {
 
         return ResponseEntity.ok()
                 .body(new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers(),
-                        room.getName(), room.getGameType(), room.getMaxPlayers(), room.isPublic()));
+                        room.getName(), room.getGameType(), room.getMaxPlayers(), room.isPublic(), room.getOwnerLogin()));
     }
 
     @PostMapping("/{roomId}/join")
@@ -69,9 +69,20 @@ public class RoomController {
     public ResponseEntity<List<RoomInfo>> listAllRooms() {
         List<RoomInfo> result = roomManager.getAllRooms().stream()
                 .map(room -> new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers(),
-                        room.getName(), room.getGameType(), room.getMaxPlayers(), room.isPublic()))
+                        room.getName(), room.getGameType(), room.getMaxPlayers(), room.isPublic(), room.getOwnerLogin()))
                 .toList();
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/get/{roomId}")
+    public ResponseEntity<RoomInfo> getRoomById(@PathVariable String roomId) {
+        log.info("Request to get room by ID: {}", roomId);
+        return roomManager.getRoomById(roomId)
+                .map(room -> new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers(),
+                        room.getName(), room.getGameType(), room.getMaxPlayers(), room.isPublic(), room.getOwnerLogin()))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
+
+

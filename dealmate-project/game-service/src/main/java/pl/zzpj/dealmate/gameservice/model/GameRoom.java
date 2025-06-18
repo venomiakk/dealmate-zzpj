@@ -13,6 +13,8 @@ import java.util.concurrent.*;
 public class GameRoom implements Runnable {
 
     @Getter
+    private final String ownerLogin;
+    @Getter
     private final String roomId;
     @Getter
     private final String joinCode;
@@ -37,6 +39,7 @@ public class GameRoom implements Runnable {
         } else {
             this.name = request.name();
         }
+        this.ownerLogin = request.ownerLogin();
         this.gameType = request.gameType();
         this.maxPlayers = request.maxPlayers();
         this.isPublic = request.isPublic();
@@ -47,6 +50,7 @@ public class GameRoom implements Runnable {
     /**
      *  Test constructor.
      *  Allows for creating a GameRoom instance without auto-starting the event loop.
+     *  Old constructor probably can be removed and changed to this one.
      */
     GameRoom(SimpMessagingTemplate messagingTemplate, CreateRoomRequest request, boolean autoStart) {
         this.roomId = UUID.randomUUID().toString();
@@ -56,6 +60,7 @@ public class GameRoom implements Runnable {
         } else {
             this.name = request.name();
         }
+        this.ownerLogin = request.ownerLogin();
         this.gameType = request.gameType();
         this.maxPlayers = request.maxPlayers();
         this.isPublic = request.isPublic();

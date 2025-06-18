@@ -19,10 +19,11 @@ class RoomManagerTest {
         // Given
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
         RoomManager roomManager = new RoomManager(messagingTemplate);
-         CreateRoomRequest request = new CreateRoomRequest(
+        CreateRoomRequest request = new CreateRoomRequest(
+                "ownerLogin",
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
-                2,
+                4,
                 true);
         // When
         GameRoom room = roomManager.createRoom(request);
@@ -33,7 +34,7 @@ class RoomManagerTest {
         assertThat(room.getJoinCode()).isNotEmpty();
         assertThat(room.getName()).isEqualTo("Test Room");
         assertThat(room.getGameType()).isEqualTo(EGameType.TEXAS_HOLDEM);
-        assertThat(room.getMaxPlayers()).isEqualTo(2);
+        assertThat(room.getMaxPlayers()).isEqualTo(4);
         assertThat(room.isPublic()).isTrue();
         assertThat(room.getPlayers().size()).isEqualTo(0); // Initially no players in the room
         // Verify that the room is added to the manager's collection
@@ -46,9 +47,10 @@ class RoomManagerTest {
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
         RoomManager roomManager = new RoomManager(messagingTemplate);
         CreateRoomRequest request = new CreateRoomRequest(
+                "ownerLogin",
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
-                2,
+                4,
                 true);
         GameRoom room = roomManager.createRoom(request);
 
@@ -66,9 +68,10 @@ class RoomManagerTest {
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
         RoomManager roomManager = new RoomManager(messagingTemplate);
         CreateRoomRequest request = new CreateRoomRequest(
+                "ownerLogin",
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
-                2,
+                4,
                 true);
         GameRoom room = roomManager.createRoom(request);
 
@@ -86,9 +89,10 @@ class RoomManagerTest {
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
         RoomManager roomManager = new RoomManager(messagingTemplate);
         CreateRoomRequest request = new CreateRoomRequest(
+                "ownerLogin",
                 "Test Room",
                 EGameType.TEXAS_HOLDEM,
-                2,
+                4,
                 true);
         GameRoom room1 = roomManager.createRoom(request);
         GameRoom room2 = roomManager.createRoom(request);

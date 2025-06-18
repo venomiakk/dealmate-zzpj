@@ -37,7 +37,12 @@ class RoomControllerTest {
     @WithMockUser(username = "player1")
     void shouldCreateRoom() throws Exception {
         // given
-        CreateRoomRequest request = new CreateRoomRequest("Test Room", EGameType.TEXAS_HOLDEM, 4, true);
+        CreateRoomRequest request = new CreateRoomRequest(
+                "ownerLogin",
+                "Test Room",
+                EGameType.TEXAS_HOLDEM,
+                4,
+                true);
         GameRoom mockRoom = mock(GameRoom.class);
         when(mockRoom.getRoomId()).thenReturn("room123");
         when(mockRoom.getJoinCode()).thenReturn("abc123");
@@ -130,5 +135,28 @@ class RoomControllerTest {
                 .andExpect(content().string("Player playerZ left room room123"));
 
         verify(mockRoom).leave("playerZ");
+    }
+
+    @Test
+    @WithMockUser(username = "playerZ")
+    void shouldReturnRoomById() throws Exception {
+        GameRoom mockRoom = mock(GameRoom.class);
+        when(mockRoom.getRoomId()).thenReturn("room123");
+        when(mockRoom.getJoinCode()).thenReturn("join123");
+        when(mockRoom.getPlayers()).thenReturn(Set.of("playerZ"));
+        when(mockRoom.getName()).thenReturn("Test Room");
+        when(mockRoom.getGameType()).thenReturn(EGameType.TEXAS_HOLDEM);
+        when(mockRoom.getMaxPlayers()).thenReturn(4);
+        when(mockRoom.isPublic()).thenReturn(true);
+        when(mockRoom.getOwnerLogin()).thenReturn("ownerLogin");
+
+        when(roomManager.getRoomById("room123")).thenReturn(Optional.of(mockRoom));
+
+        mockMvc.perform(get("/game/get/room123")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomId").value("room123"))
+                .andExpect(jsonPath("$.players[0]").value("playerZ"))
+                .andExpect(jsonPath("$.ownerLogin").value("ownerLogin"));
     }
 }
