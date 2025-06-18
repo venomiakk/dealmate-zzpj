@@ -2,6 +2,7 @@ package pl.zzpj.dealmate.gameservice.service;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import pl.zzpj.dealmate.gameservice.dto.CreateRoomRequest;
 import pl.zzpj.dealmate.gameservice.model.GameRoom;
 
 import java.util.Collection;
@@ -19,8 +20,8 @@ public class RoomManager {
         this.messagingTemplate = messagingTemplate;
     }
 
-    public GameRoom createRoom() {
-        GameRoom room = new GameRoom(messagingTemplate);
+    public GameRoom createRoom(CreateRoomRequest request) {
+        GameRoom room = new GameRoom(messagingTemplate, request, true);
         rooms.put(room.getRoomId(), room);
         return room;
     }

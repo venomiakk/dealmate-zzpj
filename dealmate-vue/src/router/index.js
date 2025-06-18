@@ -29,6 +29,11 @@ const router = createRouter({
             name: 'edit-profile',
             component: () => import('../views/EditProfileView.vue'),
         },
+        {
+            path: '/room/:roomId',
+            name: 'room',
+            component: () => import('../views/GameRoomView.vue'),
+        },
     ],
 })
 

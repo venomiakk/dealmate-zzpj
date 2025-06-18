@@ -13,4 +13,6 @@ export const gameService = {
     fetchAllRooms: `${API_GATEWAY_URL}/gameservice/game`,
     createRoom: `${API_GATEWAY_URL}/gameservice/game/create`,
     joinRoom: (roomId) => `${API_GATEWAY_URL}/gameservice/game/${roomId}/join`,
+    fetchRoomById: (roomId) => `${API_GATEWAY_URL}/gameservice/game/get/${roomId}`,
+    leaveRoom: (roomId) => `${API_GATEWAY_URL}/gameservice/game/${roomId}/leave`,
 }

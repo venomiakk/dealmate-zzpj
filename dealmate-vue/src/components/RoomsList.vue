@@ -2,7 +2,9 @@
     <div class="rooms-list-container">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3>Available Rooms</h3>
-            <button @click="createRoom" class="btn btn-primary btn-sm">Create Room</button>
+            <button @click="showCreateRoomModal = true" class="btn btn-primary btn-sm">
+                Create Room
+            </button>
         </div>
 
         <div class="rooms-list" :class="{ empty: rooms.length === 0 }">
@@ -12,23 +14,34 @@
             </div>
 
             <RoomComponent
-                v-for="room in rooms"
+                v-for="room in publicRooms"
                 :key="room.roomId"
                 :room="room"
                 @join="joinRoom"
                 class="mb-3"
             />
         </div>
+
+        <CreateRoomModal
+            :show="showCreateRoomModal"
+            @close="showCreateRoomModal = false"
+            @create="createRoom"
+        />
     </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from '@/services/axios'
-import RoomComponent from './RoomComponent.vue'
+import RoomComponent from './RoomCard.vue'
+import CreateRoomModal from './CreateRoomModal.vue'
 import { gameService } from '@/api/endpoints'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const rooms = ref([])
+const publicRooms = ref([])
+const showCreateRoomModal = ref(false)
 
 const fetchRooms = async () => {
     try {
@@ -36,18 +49,22 @@ const fetchRooms = async () => {
         const response = await axios.get(gameService.fetchAllRooms)
         console.log('Rooms fetched:', response.data)
         rooms.value = response.data
+        publicRooms.value = response.data.filter((room) => room.isPublic)
     } catch (error) {
         console.error('Error fetching rooms:', error)
-        // alert('Failed to fetch rooms. Check console for details.')
     }
 }
 
-const createRoom = async () => {
+const createRoom = async (roomConfig) => {
     try {
-        console.log('Creating room...')
-        const response = await axios.post(gameService.createRoom)
+        console.log('Creating room with config:', roomConfig)
+        const response = await axios.post(gameService.createRoom, roomConfig)
         console.log('Room created:', response.data)
-        alert('Room created successfully')
+        router.push({
+            name: 'room',
+            params: { roomId: response.data.roomId },
+            state: { roomData: response.data },
+        })
         await fetchRooms()
     } catch (error) {
         console.error('Error creating room:', error)
@@ -57,10 +74,14 @@ const createRoom = async () => {
 
 const joinRoom = async (room) => {
     try {
-        console.log('Joining room:', room.roomId)
+        console.log('Joining room:', room)
         const response = await axios.post(gameService.joinRoom(room.roomId))
-        console.log(`Joined room ${room.roomId}:`, response.data)
-        alert(`Joined room ${room.roomId} successfully`)
+        console.log(`Joined room response:`, response.data)
+        router.push({
+            name: 'room',
+            params: { roomId: room.roomId },
+            state: { roomData: room },
+        })
     } catch (error) {
         console.error(`Error joining room ${room.roomId}:`, error)
         alert('Failed to join room. Check console for details.')

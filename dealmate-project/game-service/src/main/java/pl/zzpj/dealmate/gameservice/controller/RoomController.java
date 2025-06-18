@@ -1,14 +1,18 @@
 package pl.zzpj.dealmate.gameservice.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import pl.zzpj.dealmate.gameservice.dto.CreateRoomRequest;
+import pl.zzpj.dealmate.gameservice.dto.RoomInfo;
 import pl.zzpj.dealmate.gameservice.model.GameRoom;
 import pl.zzpj.dealmate.gameservice.service.RoomManager;
 
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @RestController
 @RequestMapping("/game")
 public class RoomController {
@@ -20,14 +24,15 @@ public class RoomController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<?> createRoom(Authentication auth) {
+    public ResponseEntity<?> createRoom(Authentication auth, @RequestBody CreateRoomRequest request) {
         String playerId = auth.getName();
-
-        GameRoom room = roomManager.createRoom();
+        log.info("Creating room: {}", request);
+        GameRoom room = roomManager.createRoom(request);
         room.join(playerId);
 
         return ResponseEntity.ok()
-                .body(new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers()));
+                .body(new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers(),
+                        room.getName(), room.getGameType(), room.getMaxPlayers(), room.isPublic(), room.getOwnerLogin()));
     }
 
     @PostMapping("/{roomId}/join")
@@ -63,10 +68,21 @@ public class RoomController {
     @GetMapping
     public ResponseEntity<List<RoomInfo>> listAllRooms() {
         List<RoomInfo> result = roomManager.getAllRooms().stream()
-                .map(room -> new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers()))
+                .map(room -> new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers(),
+                        room.getName(), room.getGameType(), room.getMaxPlayers(), room.isPublic(), room.getOwnerLogin()))
                 .toList();
         return ResponseEntity.ok(result);
     }
 
-    private record RoomInfo(String roomId, String joinCode, Set<String> players) {}
+    @GetMapping("/get/{roomId}")
+    public ResponseEntity<RoomInfo> getRoomById(@PathVariable String roomId) {
+        log.info("Request to get room by ID: {}", roomId);
+        return roomManager.getRoomById(roomId)
+                .map(room -> new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers(),
+                        room.getName(), room.getGameType(), room.getMaxPlayers(), room.isPublic(), room.getOwnerLogin()))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
+
+
