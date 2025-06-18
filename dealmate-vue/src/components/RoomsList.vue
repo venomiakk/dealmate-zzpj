@@ -60,7 +60,7 @@ const createRoom = async (roomConfig) => {
         console.log('Creating room with config:', roomConfig)
         const response = await axios.post(gameService.createRoom, roomConfig)
         console.log('Room created:', response.data)
-                router.push({
+        router.push({
             name: 'room',
             params: { roomId: response.data.roomId },
             state: { roomData: response.data },
@@ -77,7 +77,7 @@ const joinRoom = async (room) => {
         console.log('Joining room:', room)
         const response = await axios.post(gameService.joinRoom(room.roomId))
         console.log(`Joined room response:`, response.data)
-                router.push({
+        router.push({
             name: 'room',
             params: { roomId: room.roomId },
             state: { roomData: room },

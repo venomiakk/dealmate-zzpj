@@ -30,9 +30,9 @@
                         </button>
                     </div>
                     <div>
-                         <small class="text-muted">
+                        <small class="text-muted">
                             <i class="fas fa-users me-1"></i>
-                            Owner: {{ room.ownerLogin? room.ownerLogin : 'Unknown' }}
+                            Owner: {{ room.ownerLogin ? room.ownerLogin : 'Unknown' }}
                         </small>
                     </div>
                 </div>
@@ -68,7 +68,7 @@ const isRoomFull = computed(() => {
 })
 
 const gameTypeName = computed(() => {
-    const gameType = GAME_TYPES.find(type => type.value === props.room.gameType)
+    const gameType = GAME_TYPES.find((type) => type.value === props.room.gameType)
     return gameType ? gameType.label : 'Unknown Game Type'
 })
 

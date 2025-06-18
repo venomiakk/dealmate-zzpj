@@ -10,7 +10,11 @@
                             <i class="fas fa-clock fa-3x mb-3 text-muted"></i>
                             <h4>Waiting for game to start...</h4>
                             <p class="text-muted">
-                                {{ isOwner ? 'Click "Start Game" when ready' : 'Waiting for room owner to start the game' }}
+                                {{
+                                    isOwner
+                                        ? 'Click "Start Game" when ready'
+                                        : 'Waiting for room owner to start the game'
+                                }}
                             </p>
                         </div>
                     </div>
@@ -109,11 +113,13 @@
                             v-for="message in chatMessages"
                             :key="message.id"
                             class="chat-message"
-                            :class="{ 'own-message': message.senderId === currentUserId }"
+                            :class="{ 'own-message': message.senderId === currentUserLogin }"
                         >
                             <div class="message-header">
                                 <span class="sender-name">{{ message.senderName }}</span>
-                                <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                                <span class="message-time">{{
+                                    formatTime(message.timestamp)
+                                }}</span>
                             </div>
                             <div class="message-content">{{ message.content }}</div>
                         </div>
@@ -146,7 +152,6 @@
     </div>
 </template>
 
-
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -171,38 +176,49 @@ const roomData = ref({
     ownerLogin: null,
     players: [],
     isPublic: true,
-    joinCode: ''
+    joinCode: '',
 })
 
 // Game state
 const gameStarted = ref(false)
 const currentPot = ref(0)
-const currentPlayer = ref(authState.login)
 
 // Chat
 const chatMessages = ref([
-    { id: 1, senderId: 'Player1', senderName: 'Player 1', content: 'Hello everyone!', timestamp: new Date() },
-    { id: 2, senderId: 'Player2', senderName: 'Player 2', content: 'Ready to play!', timestamp: new Date() }
+    {
+        id: 1,
+        senderId: 'Player1',
+        senderName: 'Player 1',
+        content: 'Hello everyone!',
+        timestamp: new Date(),
+    },
+    {
+        id: 2,
+        senderId: 'Player2',
+        senderName: 'Player 2',
+        content: 'Ready to play!',
+        timestamp: new Date(),
+    },
 ])
 const newMessage = ref('')
 const chatMessagesContainer = ref(null) // Zmiana nazwy ref
 
 // Connection state
 const isConnected = ref(true)
-const currentUserId = ref(authState.login)
+const currentUserLogin = ref(authState.login)
 
 // Computed properties
 const gameTypeName = computed(() => {
-    const gameType = GAME_TYPES.find(type => type.value === roomData.value.gameType)
+    const gameType = GAME_TYPES.find((type) => type.value === roomData.value.gameType)
     return gameType ? gameType.label : 'Unknown'
 })
 
 const isOwner = computed(() => {
-    return roomData.value.ownerLogin === currentUserId.value
+    return roomData.value.ownerLogin === currentUserLogin.value
 })
 
 const playersCount = computed(() => {
-        if (Array.isArray(roomData.value.players)) {
+    if (Array.isArray(roomData.value.players)) {
         return roomData.value.players.length
     } else if (typeof roomData.value.players === 'number') {
         return roomData.value.players
@@ -216,7 +232,7 @@ const canStartGame = computed(() => {
 
 const fetchRoomData = async () => {
     console.log('Fetching room data for:', roomId.value)
-    try{
+    try {
         loading.value = true
         error.value = null
         console.log('Current state:', history.state)
@@ -227,8 +243,6 @@ const fetchRoomData = async () => {
             loading.value = false
             return
         }
-        //TODO : Fetch room data from API
-        console.log('TODO:Fetching room data from API for:', roomId.value)
         const response = await axios.get(gameService.fetchRoomById(roomId.value))
         console.log('Room data fetched:', response.data)
         roomData.value = response.data
@@ -239,9 +253,8 @@ const fetchRoomData = async () => {
         }
         console.log('Room data successfully loaded:', roomData.value)
         // Set current user ID
-        currentUserId.value = authState.login
-    }
-    catch (err) {
+        currentUserLogin.value = authState.login
+    } catch (err) {
         console.error('Error fetching room data:', err)
         error.value = 'Failed to load room data'
     } finally {
@@ -271,10 +284,10 @@ const sendMessage = () => {
 
     const message = {
         id: Date.now(),
-        senderId: currentUserId.value,
+        senderId: currentUserLogin.value,
         senderName: authState.login,
         content: newMessage.value.trim(),
-        timestamp: new Date()
+        timestamp: new Date(),
     }
 
     chatMessages.value.push(message)
@@ -290,19 +303,17 @@ const sendMessage = () => {
     // TODO: Send message to backend
 }
 
-
-
 const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString([], {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
     })
 }
 
 // Lifecycle
 onMounted(async () => {
     // TODO: Initialize room data from route params
-        // Validate roomId
+    // Validate roomId
     if (!roomId.value) {
         console.error('Invalid room ID:', route.params.id)
         error.value = 'Invalid room ID'
@@ -560,11 +571,23 @@ onUnmounted(() => {
 }
 
 /* Badges */
-.badge-success { background-color: #28a745; }
-.badge-warning { background-color: #ffc107; color: #212529; }
-.badge-info { background-color: #17a2b8; }
-.badge-secondary { background-color: #6c757d; }
-.badge-light { background-color: #f8f9fa; color: #212529; }
+.badge-success {
+    background-color: #28a745;
+}
+.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+.badge-info {
+    background-color: #17a2b8;
+}
+.badge-secondary {
+    background-color: #6c757d;
+}
+.badge-light {
+    background-color: #f8f9fa;
+    color: #212529;
+}
 
 /* Responsive */
 @media (max-width: 768px) {

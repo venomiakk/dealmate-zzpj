@@ -31,28 +31,29 @@ public class GameRoom implements Runnable {
     private final BlockingQueue<String> events = new LinkedBlockingQueue<>();
     private final SimpMessagingTemplate messagingTemplate;
 
-    public GameRoom(SimpMessagingTemplate messagingTemplate, CreateRoomRequest request) {
-        this.roomId = UUID.randomUUID().toString();
-        this.joinCode = new BigInteger(30, new SecureRandom()).toString(32);
-        if (request.name() == null || request.name().isBlank()) {
-            this.name = "Room " + roomId.substring(0, 8); // Default name if not provided
-        } else {
-            this.name = request.name();
-        }
-        this.ownerLogin = request.ownerLogin();
-        this.gameType = request.gameType();
-        this.maxPlayers = request.maxPlayers();
-        this.isPublic = request.isPublic();
-        this.messagingTemplate = messagingTemplate;
-        Executors.newVirtualThreadPerTaskExecutor().submit(this);
-    }
+    //public GameRoom(SimpMessagingTemplate messagingTemplate, CreateRoomRequest request) {
+    //    this.roomId = UUID.randomUUID().toString();
+    //    this.joinCode = new BigInteger(30, new SecureRandom()).toString(32);
+    //    if (request.name() == null || request.name().isBlank()) {
+    //        this.name = "Room " + roomId.substring(0, 8); // Default name if not provided
+    //    } else {
+    //        this.name = request.name();
+    //    }
+    //    this.ownerLogin = request.ownerLogin();
+    //    this.gameType = request.gameType();
+    //    this.maxPlayers = request.maxPlayers();
+    //    this.isPublic = request.isPublic();
+    //    this.messagingTemplate = messagingTemplate;
+    //    Executors.newVirtualThreadPerTaskExecutor().submit(this);
+    //}
 
     /**
-     *  Test constructor.
-     *  Allows for creating a GameRoom instance without auto-starting the event loop.
-     *  Old constructor probably can be removed and changed to this one.
+     *  Changed constructor
+     *  Now accepts an additional parameter to control auto-starting the room.
+     *  If autoStart is true, the room will start immediately
+     *  It was created mainly for testing purposes
      */
-    GameRoom(SimpMessagingTemplate messagingTemplate, CreateRoomRequest request, boolean autoStart) {
+    public GameRoom(SimpMessagingTemplate messagingTemplate, CreateRoomRequest request, boolean autoStart) {
         this.roomId = UUID.randomUUID().toString();
         this.joinCode = new BigInteger(30, new SecureRandom()).toString(32);
         if (request.name() == null || request.name().isBlank()) {

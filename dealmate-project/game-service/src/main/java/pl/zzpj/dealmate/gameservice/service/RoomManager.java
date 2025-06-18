@@ -21,7 +21,7 @@ public class RoomManager {
     }
 
     public GameRoom createRoom(CreateRoomRequest request) {
-        GameRoom room = new GameRoom(messagingTemplate, request);
+        GameRoom room = new GameRoom(messagingTemplate, request, true);
         rooms.put(room.getRoomId(), room);
         return room;
     }

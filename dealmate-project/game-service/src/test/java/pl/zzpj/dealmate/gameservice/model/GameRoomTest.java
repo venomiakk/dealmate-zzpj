@@ -30,7 +30,7 @@ class GameRoomTest {
                 EGameType.TEXAS_HOLDEM,
                 4,
                 true);
-        GameRoom gameRoom = new GameRoom(messagingTemplate, request);
+        GameRoom gameRoom = new GameRoom(messagingTemplate, request, true);
         String playerId = "player1";
 
         // When
@@ -49,7 +49,7 @@ class GameRoomTest {
                 EGameType.TEXAS_HOLDEM,
                 4,
                 true);
-        GameRoom gameRoom = new GameRoom(messagingTemplate, request);
+        GameRoom gameRoom = new GameRoom(messagingTemplate, request, true);
         String playerId = "player1";
         gameRoom.join(playerId);
 
@@ -69,7 +69,7 @@ class GameRoomTest {
                 EGameType.TEXAS_HOLDEM,
                 4,
                 true);
-        GameRoom gameRoom = new GameRoom(messagingTemplate, request);
+        GameRoom gameRoom = new GameRoom(messagingTemplate, request, true);
 
         // Then
         assertThat(gameRoom.getName()).startsWith("Room ");

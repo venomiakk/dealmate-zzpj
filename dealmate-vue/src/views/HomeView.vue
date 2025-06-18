@@ -12,5 +12,5 @@
 
 <script setup>
 import RoomsList from '../components/RoomsList.vue'
-import { authState, auth } from '@/auth/auth';
+import { authState, auth } from '@/auth/auth'
 </script>
