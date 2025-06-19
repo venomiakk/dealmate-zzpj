@@ -113,15 +113,19 @@
                             v-for="message in chatMessages"
                             :key="message.id"
                             class="chat-message"
-                            :class="{ 'own-message': message.senderId === currentUserLogin }"
+                            :class="{
+                                'own-message': message.senderId === currentUserLogin,
+                                'system-message': message.isSystem
+                            }"
                         >
-                            <div class="message-header">
-                                <span class="sender-name">{{ message.senderName }}</span>
-                                <span class="message-time">{{
-                                    formatTime(message.timestamp)
-                                }}</span>
+                            <div class="message-wrapper">
+                                <!-- Pokaż header tylko dla wiadomości nie-systemowych -->
+                                <div v-if="!message.isSystem" class="message-header">
+                                    <span class="sender-name">{{ message.senderName }}</span>
+                                    <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                                </div>
+                                <div class="message-content">{{ message.content }}</div>
                             </div>
-                            <div class="message-content">{{ message.content }}</div>
                         </div>
                     </div>
 
@@ -157,7 +161,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { GAME_TYPES } from '@/constants/constants'
 // POPRAWIONY IMPORT: importujemy zarówno 'auth' jak i 'authState'
-import { auth, authState } from '@/auth/auth' 
+import { auth, authState } from '@/auth/auth'
 import axios from '@/services/axios'
 import { gameService } from '@/api/endpoints'
 import { Client } from '@stomp/stompjs'
@@ -191,7 +195,7 @@ const chatMessagesContainer = ref(null)
 const isConnected = ref(false)
 const stompClient = ref(null)
 // POPRAWKA: odwołujemy się do zaimportowanego authState
-const currentUserLogin = ref(authState.login) 
+const currentUserLogin = ref(authState.login)
 
 const gameTypeName = computed(() => {
     const gameType = GAME_TYPES.find((type) => type.value === roomData.value.gameType)
@@ -228,9 +232,10 @@ const fetchRoomData = async () => {
 
 const leaveRoom = () => {
     if (confirm('Are you sure you want to leave the room?')) {
-        axios.post(gameService.leaveRoom(roomId.value))
+        axios
+            .post(gameService.leaveRoom(roomId.value))
             .then(() => router.push('/'))
-            .catch(err => console.error("Failed to leave room", err));
+            .catch((err) => console.error('Failed to leave room', err))
     }
 }
 
@@ -240,24 +245,38 @@ const formatTime = (timestamp) => {
 
 // --- Logika WebSocket ---
 // POPRAWKA: Funkcja jest teraz asynchroniczna
-const connectToChat = async () => { 
-    const CHAT_SERVICE_URL = 'http://localhost:8100/chatservice';
+const connectToChat = async () => {
+    const CHAT_SERVICE_URL = 'http://localhost:8100/ws-chat'
 
     // POPRAWKA: Najpierw pobieramy token i czekamy na niego
-    console.log("Attempting to get auth token...");
-    const token = await auth.getToken();
-    console.log("Token received:", token ? "OK" : "null or undefined");
+    console.log('Attempting to get auth token...')
+    const token = await auth.getToken()
+    console.log('Token received:', token ? 'OK' : 'null or undefined')
 
     if (!token) {
-        console.error("FATAL: Auth token is not available. Cannot connect to WebSocket.");
-        return;
+        console.error('FATAL: Auth token is not available. Cannot connect to WebSocket.')
+        return
+    }
+    try {
+        console.log('Checking chat service availability...')
+        const response = await axios.get(`http://localhost:8100/chatservice/api/chat/test`)
+        if (response.status === 200) {
+            console.log('Chat service is available: ', response.data)
+        } else {
+            console.error('Chat service is not available:', response.statusText)
+            return
+        }
+    } catch (error) {
+        console.error('Error checking chat service availability:', error)
+        return
     }
 
+    console.log("Token", token)
     const client = new Client({
         webSocketFactory: () => new SockJS(CHAT_SERVICE_URL),
         connectHeaders: {
             // POPRAWKA: Używamy pobranego tokenu
-            Authorization: `Bearer ${token}`, 
+            Authorization: `Bearer ${token}`,
         },
         debug: (str) => {
             console.log(`[WebSocket] ${new Date().toLocaleTimeString()}: ${str}`)
@@ -269,6 +288,11 @@ const connectToChat = async () => {
 
             client.subscribe(`/topic/room/${roomId.value}/chat`, (message) => {
                 const chatMsg = JSON.parse(message.body)
+                if (chatMsg.sender === 'System') {
+                    addSystemMessage(chatMsg.content)
+                    return
+                }
+
                 chatMessages.value.push({
                     id: chatMsg.timestamp,
                     senderId: chatMsg.sender,
@@ -281,8 +305,8 @@ const connectToChat = async () => {
 
             client.subscribe(`/topic/room/${roomId.value}/players`, (message) => {
                 const playersUpdate = JSON.parse(message.body)
-                console.log("Received players update:", playersUpdate);
-                roomData.value.players = playersUpdate.players;
+                console.log('Received players update:', playersUpdate)
+                roomData.value.players = playersUpdate.players
             })
         },
         onStompError: (frame) => {
@@ -293,7 +317,7 @@ const connectToChat = async () => {
         onWebSocketClose: () => {
             isConnected.value = false
             console.log('WebSocket connection closed.')
-        }
+        },
     })
 
     client.activate()
@@ -308,12 +332,34 @@ const disconnectFromChat = () => {
 
 const sendMessage = () => {
     if (!newMessage.value.trim() || !isConnected.value) return
-    const chatMessage = { content: newMessage.value.trim() }
+
+    const chatMessage = {
+        content: newMessage.value.trim(),
+        sender: authState.login // Dodaj nadawcę
+    }
+
     stompClient.value.publish({
         destination: `/app/room/${roomId.value}/chat.sendMessage`,
         body: JSON.stringify(chatMessage),
+        headers: {
+            sender: authState.login // Dodaj nadawcę w nagłówkach
+        }
     })
+
     newMessage.value = ''
+}
+
+const addSystemMessage = (content) => {
+    const message = {
+        id: Date.now(),
+        senderId: 'system',
+        senderName: 'System',
+        content: content,
+        timestamp: new Date(),
+        isSystem: true // Dodaj flagę systemową
+    }
+    chatMessages.value.push(message)
+    scrollToBottom()
 }
 
 const scrollToBottom = () => {
@@ -340,7 +386,6 @@ onMounted(async () => {
 onUnmounted(() => {
     disconnectFromChat()
 })
-
 </script>
 
 <style scoped>
@@ -522,22 +567,39 @@ onUnmounted(() => {
     padding: 1rem;
     overflow-y: auto;
     max-height: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 .chat-message {
-    margin-bottom: 1rem;
+    display: flex;
+    width: 100%;
 }
 
-.chat-message.own-message .message-content {
-    background: #007bff;
-    color: white;
-    margin-left: auto;
+.chat-message:not(.own-message) {
+    justify-content: flex-start;
+}
+
+.chat-message.own-message {
+    justify-content: flex-end;
+}
+
+.message-wrapper {
+    max-width: 70%;
+    min-width: 120px;
 }
 
 .message-header {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 0.25rem;
+    padding: 0 0.5rem;
+}
+
+.chat-message.own-message .message-header {
+    flex-direction: row-reverse;
 }
 
 .sender-name {
@@ -546,72 +608,100 @@ onUnmounted(() => {
     color: #495057;
 }
 
+.chat-message.own-message .sender-name {
+    color: #0d6efd;
+}
+
 .message-time {
     font-size: 0.75rem;
     color: #6c757d;
+    margin-left: 0.5rem;
+}
+
+.chat-message.own-message .message-time {
+    margin-left: 0;
+    margin-right: 0.5rem;
 }
 
 .message-content {
-    background: #f8f9fa;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
     word-wrap: break-word;
+    position: relative;
 }
 
-.chat-input {
-    padding: 1rem;
-    border-top: 1px solid #dee2e6;
+/* Wiadomości innych użytkowników - po lewej, szare */
+.chat-message:not(.own-message) .message-content {
     background: #f8f9fa;
+    color: #333;
+    border-bottom-left-radius: 0.25rem;
+    border: 1px solid #e9ecef;
 }
 
-.input-group {
-    display: flex;
+/* Własne wiadomości - po prawej, niebieskie */
+.chat-message.own-message .message-content {
+    background: #0d6efd;
+    color: white;
+    border-bottom-right-radius: 0.25rem;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
 }
 
-.input-group .form-control {
-    flex: 1;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+/* Efekt hover */
+.message-content:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
 }
 
-.input-group .btn {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
+.chat-message:not(.own-message) .message-content:hover {
+    background: #e9ecef;
 }
 
-/* Badges */
-.badge-success {
-    background-color: #28a745;
-}
-.badge-warning {
-    background-color: #ffc107;
-    color: #212529;
-}
-.badge-info {
-    background-color: #17a2b8;
-}
-.badge-secondary {
-    background-color: #6c757d;
-}
-.badge-light {
-    background-color: #f8f9fa;
-    color: #212529;
+.chat-message.own-message .message-content:hover {
+    background: #0b5ed7;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .game-room-layout {
-        flex-direction: column;
-    }
-
-    .sidebar {
-        width: 100%;
-        order: -1;
-    }
-
-    .chat-panel {
-        max-height: 300px;
-    }
+/* Scrollbar dla chat messages */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
 }
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Wiadomości systemowe (opcjonalnie) */
+.chat-message.system-message {
+    justify-content: center;
+    margin: 1rem 0; /* Więcej marginesu dla lepszego oddzielenia */
+}
+
+.chat-message.system-message .message-wrapper {
+    max-width: 90%;
+    text-align: center;
+}
+
+.chat-message.system-message .message-content {
+    /* background: #fff3cd; */
+    /* color: #856404; */
+    /* border: 1px solid #ffeaa7; */
+    font-style: italic;
+    border-radius: 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    box-shadow: none;
+}
+
+
+
+/* ...rest of existing styles remain the same... */
 </style>

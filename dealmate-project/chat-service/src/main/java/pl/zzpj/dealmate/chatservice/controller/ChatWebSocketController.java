@@ -6,6 +6,7 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import pl.zzpj.dealmate.chatservice.dto.ChatMessageDto;
 
@@ -19,9 +20,10 @@ public class ChatWebSocketController {
     private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/room/{roomId}/chat.sendMessage")
-    public void sendMessage(@DestinationVariable String roomId, @Payload ChatMessageDto chatMessage, Principal principal) {
+    public void sendMessage(@DestinationVariable String roomId, @Payload ChatMessageDto chatMessage) {
+        log.warn("Received message for room {}: {}", roomId, chatMessage);
         // Ustaw nadawcę na podstawie zalogowanego użytkownika
-        chatMessage.setSender(principal.getName());
+        chatMessage.setSender(chatMessage.getSender());
         chatMessage.setTimestamp(System.currentTimeMillis());
 
         log.info("Broadcasting message from {} to room {}: {}", chatMessage.getSender(), roomId, chatMessage.getContent());

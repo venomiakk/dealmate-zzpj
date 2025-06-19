@@ -93,8 +93,9 @@ public class GameRoom {
     private void notifyChatService(String systemMessage) {
         try {
             RoomStateUpdateDto update = new RoomStateUpdateDto(this.roomId, this.getPlayers(), systemMessage);
+            log.warn("Notifying ChatService about room state change: {}", update);
             chatServiceClient.notifyRoomStateChange(update);
-            log.info("Notified ChatService about update in room {}", this.roomId);
+            log.warn("Notified ChatService about update in room {}", this.roomId);
         } catch (Exception e) {
             log.error("Failed to notify ChatService for room {}: {}", this.roomId, e.getMessage());
             // Tutaj można dodać logikę ponawiania lub obsługi błędów

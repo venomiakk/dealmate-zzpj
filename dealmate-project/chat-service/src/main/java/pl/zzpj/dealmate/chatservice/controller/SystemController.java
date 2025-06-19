@@ -3,10 +3,7 @@ package pl.zzpj.dealmate.chatservice.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pl.zzpj.dealmate.chatservice.dto.ChatMessageDto;
 import pl.zzpj.dealmate.chatservice.dto.RoomInfoUpdateDto;
 import pl.zzpj.dealmate.chatservice.dto.RoomStateUpdateDto;
@@ -21,7 +18,7 @@ public class SystemController {
 
     @PostMapping("/system/update")
     public void handleRoomStateUpdate(@RequestBody RoomStateUpdateDto updateDto) {
-        log.info("Received system update for room {}: {}", updateDto.roomId(), updateDto.systemMessage());
+        log.warn("Received system update for room {}: {}", updateDto.roomId(), updateDto.systemMessage());
 
         // 1. Wyślij wiadomość systemową na czat
         if (updateDto.systemMessage() != null && !updateDto.systemMessage().isBlank()) {
@@ -37,5 +34,11 @@ public class SystemController {
             RoomInfoUpdateDto playersUpdate = new RoomInfoUpdateDto(updateDto.players());
             messagingTemplate.convertAndSend("/topic/room/" + updateDto.roomId() + "/players", playersUpdate);
         }
+    }
+
+    @GetMapping("/test")
+    public String testEndpoint() {
+        log.info("Test endpoint hit");
+        return "Chat service is running!";
     }
 }

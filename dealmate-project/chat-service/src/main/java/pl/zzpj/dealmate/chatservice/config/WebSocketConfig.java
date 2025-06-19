@@ -18,8 +18,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Endpoint dla frontendu. Może być taki sam jak w GameService,
-        // jeśli będą za proxy, ale lepiej użyć innego dla jasności.
-        registry.addEndpoint("/ws-chat").setAllowedOriginPatterns("*").withSockJS();
+        registry.addEndpoint("/ws-chat")
+                .setAllowedOrigins("http://localhost:5173") // Adjust allowed origins as needed
+                .withSockJS();
     }
+
 }
