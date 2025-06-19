@@ -53,6 +53,14 @@ spring:
             - StripPrefix=1
             - TokenRelay
 
+        - id: chat-service
+          uri: lb://CHATSERVICE # Nazwa serwisu w Eureka
+          predicates:
+            - Path=/chatservice/**
+          filters:
+            - StripPrefix=1
+            - TokenRelay
+
 #      globalcors:
 #        corsConfigurations:
 #          '[/**]':

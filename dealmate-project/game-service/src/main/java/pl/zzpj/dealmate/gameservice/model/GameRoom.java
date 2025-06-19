@@ -1,102 +1,107 @@
 package pl.zzpj.dealmate.gameservice.model;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import pl.zzpj.dealmate.gameservice.dto.CreateRoomRequest;
+import pl.zzpj.dealmate.gameservice.dto.RoomInfo; // Import RoomInfo DTO
+import pl.zzpj.dealmate.gameservice.dto.ChatMessage; // New ChatMessage DTO
+import pl.zzpj.dealmate.gameservice.service.RoomManager; // To notify RoomManager for removal
+import pl.zzpj.dealmate.gameservice.client.ChatServiceClient;
+import pl.zzpj.dealmate.gameservice.dto.RoomStateUpdateDto;
 
-import java.math.BigInteger;
-import java.security.SecureRandom;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.CopyOnWriteArraySet; // For thread-safe player set
 
-public class GameRoom implements Runnable {
-
-    @Getter
-    private final String ownerLogin;
-    @Getter
+@Slf4j
+@Getter
+public class GameRoom {
     private final String roomId;
-    @Getter
-    private final String joinCode;
-    @Getter
     private final String name;
-    @Getter
-    private final EGameType gameType;
-    @Getter
+    private final String gameType; // This is a String
     private final int maxPlayers;
-    @Getter
     private final boolean isPublic;
-    @Getter
-    private final Long entryFee;
-    private final Set<String> players = ConcurrentHashMap.newKeySet();
-    @Getter
-    private final BlockingQueue<String> events = new LinkedBlockingQueue<>();
-    private final SimpMessagingTemplate messagingTemplate;
+    private final String joinCode;
+    private final String ownerLogin;
+    private final double entryFee;
 
-    //public GameRoom(SimpMessagingTemplate messagingTemplate, CreateRoomRequest request) {
-    //    this.roomId = UUID.randomUUID().toString();
-    //    this.joinCode = new BigInteger(30, new SecureRandom()).toString(32);
-    //    if (request.name() == null || request.name().isBlank()) {
-    //        this.name = "Room " + roomId.substring(0, 8); // Default name if not provided
-    //    } else {
-    //        this.name = request.name();
-    //    }
-    //    this.ownerLogin = request.ownerLogin();
-    //    this.gameType = request.gameType();
-    //    this.maxPlayers = request.maxPlayers();
-    //    this.isPublic = request.isPublic();
-    //    this.messagingTemplate = messagingTemplate;
-    //    Executors.newVirtualThreadPerTaskExecutor().submit(this);
-    //}
+    private final Set<String> players;
+    private RoomManager roomManager; // To allow GameRoom to notify RoomManager about its state
+    private final ChatServiceClient chatServiceClient; // <-- Nowe pole
 
-    /**
-     *  Changed constructor
-     *  Now accepts an additional parameter to control auto-starting the room.
-     *  If autoStart is true, the room will start immediately
-     *  It was created mainly for testing purposes
-     */
-    public GameRoom(SimpMessagingTemplate messagingTemplate, CreateRoomRequest request, boolean autoStart) {
+    public GameRoom(CreateRoomRequest request, RoomManager roomManager, ChatServiceClient chatServiceClient) {
         this.roomId = UUID.randomUUID().toString();
-        this.joinCode = new BigInteger(30, new SecureRandom()).toString(32);
-        if (request.name() == null || request.name().isBlank()) {
-            this.name = "Room " + roomId.substring(0, 8); // Default name if not provided
-        } else {
-            this.name = request.name();
-        }
-        this.ownerLogin = request.ownerLogin();
-        this.gameType = request.gameType();
+        this.name = request.name();
+        this.gameType = request.gameType().name();
         this.maxPlayers = request.maxPlayers();
         this.isPublic = request.isPublic();
-        this.entryFee = request.entryFee() != null ? request.entryFee() : 0L; // Default to 0 if not provided
-        this.messagingTemplate = messagingTemplate;
-        if (autoStart) {
-            Executors.newVirtualThreadPerTaskExecutor().submit(this);
+        this.joinCode = generateJoinCode();
+        this.ownerLogin = request.ownerLogin();
+        this.entryFee = request.entryFee() != null ? request.entryFee() : 0;
+        this.players = new CopyOnWriteArraySet<>();
+        this.roomManager = roomManager;
+        this.chatServiceClient = chatServiceClient; // <-- Inicjalizacja
+        log.info("GameRoom created: {}", this.roomId);
+    }
+
+    // Setter for RoomManager, to be called after creation in RoomManager
+    public void setRoomManager(RoomManager roomManager) {
+        this.roomManager = roomManager;
+    }
+
+    private String generateJoinCode() {
+// Generate a simple 6-character alphanumeric code
+        return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+    }
+
+    public boolean join(String playerId) {
+        if (players.size() >= maxPlayers) {
+            log.warn("Room {} is full. Player {} cannot join.", roomId, playerId);
+            return false;
         }
+        if (players.add(playerId)) {
+            log.info("Player {} joined room {}", playerId, roomId);
+            // Wyślij powiadomienie do ChatService
+            notifyChatService(playerId + " has joined the room.");
+            return true;
+        }
+        return false;
     }
 
-    public void join(String playerId) {
-        players.add(playerId);
-        events.add("JOIN:" + playerId);
+    public boolean leave(String playerId) {
+        if (players.remove(playerId)) {
+            log.info("Player {} left room {}", playerId, roomId);
+
+            // Sprawdź, czy pokój jest pusty i usuń go
+            if (players.isEmpty() && roomManager != null) {
+                log.info("Room {} is empty. Removing room.", roomId);
+                // Najpierw wyślij ostatnią aktualizację, że gracz wyszedł
+                notifyChatService(playerId + " has left the room. The room is now empty.");
+                roomManager.removeRoom(roomId);
+            } else {
+                // Jeśli pokój nie jest pusty, po prostu wyślij aktualizację
+                notifyChatService(playerId + " has left the room.");
+            }
+            return true;
+        }
+        return false;
     }
 
-    public void leave(String playerId) {
-        players.remove(playerId);
-        events.add("LEAVE:" + playerId);
+    private void notifyChatService(String systemMessage) {
+        try {
+            RoomStateUpdateDto update = new RoomStateUpdateDto(this.roomId, this.getPlayers(), systemMessage);
+            chatServiceClient.notifyRoomStateChange(update);
+            log.info("Notified ChatService about update in room {}", this.roomId);
+        } catch (Exception e) {
+            log.error("Failed to notify ChatService for room {}: {}", this.roomId, e.getMessage());
+            // Tutaj można dodać logikę ponawiania lub obsługi błędów
+        }
     }
 
     public Set<String> getPlayers() {
-        return Set.copyOf(players); // unmodifiable snapshot
-    }
-
-    @Override
-    public void run() {
-        try {
-            while (!Thread.interrupted()) {
-                String event = events.take();
-                messagingTemplate.convertAndSend("/topic/room/" + roomId, event);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        return Collections.unmodifiableSet(players);
     }
 }

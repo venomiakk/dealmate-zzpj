@@ -156,9 +156,12 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { GAME_TYPES } from '@/constants/constants'
-import { authState } from '@/auth/auth'
+// POPRAWIONY IMPORT: importujemy zarówno 'auth' jak i 'authState'
+import { auth, authState } from '@/auth/auth' 
 import axios from '@/services/axios'
 import { gameService } from '@/api/endpoints'
+import { Client } from '@stomp/stompjs'
+import SockJS from 'sockjs-client'
 
 const route = useRoute()
 const router = useRouter()
@@ -167,7 +170,6 @@ const roomId = computed(() => route.params.roomId)
 const loading = ref(true)
 const error = ref(null)
 
-// Room data
 const roomData = ref({
     roomId: null,
     name: '',
@@ -179,35 +181,18 @@ const roomData = ref({
     joinCode: '',
 })
 
-// Game state
 const gameStarted = ref(false)
 const currentPot = ref(0)
 
-// Chat
-const chatMessages = ref([
-    {
-        id: 1,
-        senderId: 'Player1',
-        senderName: 'Player 1',
-        content: 'Hello everyone!',
-        timestamp: new Date(),
-    },
-    {
-        id: 2,
-        senderId: 'Player2',
-        senderName: 'Player 2',
-        content: 'Ready to play!',
-        timestamp: new Date(),
-    },
-])
+const chatMessages = ref([])
 const newMessage = ref('')
-const chatMessagesContainer = ref(null) // Zmiana nazwy ref
+const chatMessagesContainer = ref(null)
 
-// Connection state
-const isConnected = ref(true)
-const currentUserLogin = ref(authState.login)
+const isConnected = ref(false)
+const stompClient = ref(null)
+// POPRAWKA: odwołujemy się do zaimportowanego authState
+const currentUserLogin = ref(authState.login) 
 
-// Computed properties
 const gameTypeName = computed(() => {
     const gameType = GAME_TYPES.find((type) => type.value === roomData.value.gameType)
     return gameType ? gameType.label : 'Unknown'
@@ -218,12 +203,7 @@ const isOwner = computed(() => {
 })
 
 const playersCount = computed(() => {
-    if (Array.isArray(roomData.value.players)) {
-        return roomData.value.players.length
-    } else if (typeof roomData.value.players === 'number') {
-        return roomData.value.players
-    }
-    return 0
+    return Array.isArray(roomData.value.players) ? roomData.value.players.length : 0
 })
 
 const canStartGame = computed(() => {
@@ -235,25 +215,9 @@ const fetchRoomData = async () => {
     try {
         loading.value = true
         error.value = null
-        console.log('Current state:', history.state)
-        const stateData = history.state?.roomData
-        if (stateData) {
-            console.log('Room data from state:', roomData.value)
-            roomData.value = stateData
-            loading.value = false
-            return
-        }
         const response = await axios.get(gameService.fetchRoomById(roomId.value))
         console.log('Room data fetched:', response.data)
         roomData.value = response.data
-        if (!roomData.value.roomId) {
-            console.error('Invalid room data:', roomData.value)
-            error.value = 'Invalid room data'
-            return
-        }
-        console.log('Room data successfully loaded:', roomData.value)
-        // Set current user ID
-        currentUserLogin.value = authState.login
     } catch (err) {
         console.error('Error fetching room data:', err)
         error.value = 'Failed to load room data'
@@ -262,75 +226,121 @@ const fetchRoomData = async () => {
     }
 }
 
-// Methods
-const startGame = () => {
-    if (!canStartGame.value) return
-
-    gameStarted.value = true
-    // TODO: Send start game signal to backend
-    console.log('Starting game...')
-}
-
 const leaveRoom = () => {
     if (confirm('Are you sure you want to leave the room?')) {
-        //todo: try-catch block
         axios.post(gameService.leaveRoom(roomId.value))
-        router.push('/')
+            .then(() => router.push('/'))
+            .catch(err => console.error("Failed to leave room", err));
+    }
+}
+
+const formatTime = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+// --- Logika WebSocket ---
+// POPRAWKA: Funkcja jest teraz asynchroniczna
+const connectToChat = async () => { 
+    const CHAT_SERVICE_URL = 'http://localhost:8100/chatservice';
+
+    // POPRAWKA: Najpierw pobieramy token i czekamy na niego
+    console.log("Attempting to get auth token...");
+    const token = await auth.getToken();
+    console.log("Token received:", token ? "OK" : "null or undefined");
+
+    if (!token) {
+        console.error("FATAL: Auth token is not available. Cannot connect to WebSocket.");
+        return;
+    }
+
+    const client = new Client({
+        webSocketFactory: () => new SockJS(CHAT_SERVICE_URL),
+        connectHeaders: {
+            // POPRAWKA: Używamy pobranego tokenu
+            Authorization: `Bearer ${token}`, 
+        },
+        debug: (str) => {
+            console.log(`[WebSocket] ${new Date().toLocaleTimeString()}: ${str}`)
+        },
+        reconnectDelay: 5000,
+        onConnect: () => {
+            isConnected.value = true
+            console.log('Successfully connected to Chat Service!')
+
+            client.subscribe(`/topic/room/${roomId.value}/chat`, (message) => {
+                const chatMsg = JSON.parse(message.body)
+                chatMessages.value.push({
+                    id: chatMsg.timestamp,
+                    senderId: chatMsg.sender,
+                    senderName: chatMsg.sender,
+                    content: chatMsg.content,
+                    timestamp: chatMsg.timestamp,
+                })
+                scrollToBottom()
+            })
+
+            client.subscribe(`/topic/room/${roomId.value}/players`, (message) => {
+                const playersUpdate = JSON.parse(message.body)
+                console.log("Received players update:", playersUpdate);
+                roomData.value.players = playersUpdate.players;
+            })
+        },
+        onStompError: (frame) => {
+            console.error('Broker reported error: ' + frame.headers['message'])
+            console.error('Additional details: ' + frame.body)
+            isConnected.value = false
+        },
+        onWebSocketClose: () => {
+            isConnected.value = false
+            console.log('WebSocket connection closed.')
+        }
+    })
+
+    client.activate()
+    stompClient.value = client
+}
+
+const disconnectFromChat = () => {
+    if (stompClient.value) {
+        stompClient.value.deactivate()
     }
 }
 
 const sendMessage = () => {
-    if (!newMessage.value.trim()) return
-
-    const message = {
-        id: Date.now(),
-        senderId: currentUserLogin.value,
-        senderName: authState.login,
-        content: newMessage.value.trim(),
-        timestamp: new Date(),
-    }
-
-    chatMessages.value.push(message)
+    if (!newMessage.value.trim() || !isConnected.value) return
+    const chatMessage = { content: newMessage.value.trim() }
+    stompClient.value.publish({
+        destination: `/app/room/${roomId.value}/chat.sendMessage`,
+        body: JSON.stringify(chatMessage),
+    })
     newMessage.value = ''
+}
 
-    // Scroll to bottom
+const scrollToBottom = () => {
     nextTick(() => {
         if (chatMessagesContainer.value) {
             chatMessagesContainer.value.scrollTop = chatMessagesContainer.value.scrollHeight
         }
     })
-
-    // TODO: Send message to backend
 }
 
-const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-    })
-}
-
-// Lifecycle
+// --- Cykl Życia Komponentu ---
 onMounted(async () => {
-    // TODO: Initialize room data from route params
-    // Validate roomId
     if (!roomId.value) {
-        console.error('Invalid room ID:', route.params.id)
         error.value = 'Invalid room ID'
         return
     }
-
-    // Fetch room data
     await fetchRoomData()
-
-    // TODO: Connect to WebSocket
-    console.log('TODO: Connect to WebSocket of room:', route.params.roomId)
+    if (!error.value) {
+        // Wywołujemy teraz naszą nową, asynchroniczną funkcję
+        connectToChat()
+    }
 })
 
 onUnmounted(() => {
-    // TODO: Disconnect from WebSocket
-    console.log('Disconnecting from room')
+    disconnectFromChat()
 })
+
 </script>
 
 <style scoped>
