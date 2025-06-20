@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,12 +65,20 @@ class BlackjackGameTest {
         field.set(blackjackGame, value);
     }
 
-    private void setState(GameStatus status, int currentPlayerIndex) {
+    // ZMIANA: Ta metoda została przepisana, aby poprawnie modyfikować pola atomowe
+    private void setState(GameStatus status, int currentPlayerIndexValue) {
         try {
-            setField("gameStatus", status);
-            setField("currentPlayerIndex", currentPlayerIndex);
+            Field gameStatusField = BlackjackGame.class.getDeclaredField("gameStatus");
+            gameStatusField.setAccessible(true);
+            AtomicReference<GameStatus> gameStatusRef = (AtomicReference<GameStatus>) gameStatusField.get(blackjackGame);
+            gameStatusRef.set(status);
+
+            Field playerIndexField = BlackjackGame.class.getDeclaredField("currentPlayerIndex");
+            playerIndexField.setAccessible(true);
+            AtomicInteger playerIndexRef = (AtomicInteger) playerIndexField.get(blackjackGame);
+            playerIndexRef.set(currentPlayerIndexValue);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to set state via reflection", e);
         }
     }
 
@@ -89,16 +98,6 @@ class BlackjackGameTest {
         method.setAccessible(true);
         method.invoke(blackjackGame);
     }
-    private void invokePrivateMethod(String methodName, Object... args) throws Exception {
-        Class<?>[] argTypes = new Class<?>[args.length];
-        for(int i = 0; i < args.length; i++) {
-            argTypes[i] = args[i].getClass();
-        }
-        Method method = BlackjackGame.class.getDeclaredMethod(methodName, argTypes);
-        method.setAccessible(true);
-        method.invoke(blackjackGame, args);
-    }
-
 
     @Nested
     @DisplayName("Player Action Tests")
@@ -278,43 +277,31 @@ class BlackjackGameTest {
             assertThat(invokeCalculateHandValue(dealerHand)).isEqualTo(24);
         }
 
-        // ZMIANA: Dodano test dla metody play()
         @Test
         void play_shouldRunFullRoundAndReturnWinners() throws InterruptedException {
-            // Given
             String player1 = "player1";
             blackjackGame = new BlackjackGame(mockRoom, mockDeckService, mockMessagingTemplate, List.of(player1), mockGameHistoryService);
             when(mockRoom.getPlayers()).thenReturn(Map.of(player1, new PlayerDto(player1, 1000L)));
 
-            // Konfiguracja kart, aby gracz miał 20, a krupier 17
             when(mockDeckService.drawCards(anyLong(), eq(1)))
-                    .thenReturn(List.of(card("10", "S"))) // Gracz, karta 1
-                    .thenReturn(List.of(card("7", "S")))  // Krupier, karta 1
-                    .thenReturn(List.of(king()))         // Gracz, karta 2 (razem 20)
-                    .thenReturn(List.of(card("10", "H"))); // Krupier, karta 2 (razem 17)
+                    .thenReturn(List.of(card("10", "S")))
+                    .thenReturn(List.of(card("7", "S")))
+                    .thenReturn(List.of(king()))
+                    .thenReturn(List.of(card("10", "H")));
 
             AtomicReference<List<String>> winners = new AtomicReference<>();
 
-            // When
-            // Uruchamiamy metodę play() w osobnym wątku, aby nie blokować testu na wait()
-            Thread gameThread = new Thread(() -> {
-                winners.set(blackjackGame.play());
-            });
+            Thread gameThread = new Thread(() -> winners.set(blackjackGame.play()));
             gameThread.start();
 
-            // Czekamy chwilę, aby upewnić się, że wątek gry doszedł do momentu oczekiwania na akcję gracza
             Thread.sleep(500);
 
-            // Symulujemy akcję gracza (stand), co odblokuje metodę play()
             blackjackGame.handlePlayerAction(player1, new PlayerAction.Stand());
 
-            // Czekamy na zakończenie wątku gry
             gameThread.join();
 
-            // Then
             assertThat(winners.get()).isNotNull().containsExactly(player1);
 
-            // Weryfikujemy, czy na koniec został zapisany prawidłowy wynik
             ArgumentCaptor<GameResult> resultCaptor = ArgumentCaptor.forClass(GameResult.class);
             verify(mockGameHistoryService).recordGameResults(eq(player1), resultCaptor.capture(), any(BigDecimal.class));
             assertThat(resultCaptor.getValue()).isEqualTo(GameResult.WIN);

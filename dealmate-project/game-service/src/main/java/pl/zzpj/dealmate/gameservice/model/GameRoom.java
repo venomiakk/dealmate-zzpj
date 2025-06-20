@@ -19,6 +19,7 @@ import pl.zzpj.dealmate.gameservice.service.RoomManager;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference; // ZMIANA: Nowy import
 
 @Slf4j
 @Getter
@@ -42,7 +43,9 @@ public class GameRoom implements Runnable {
 
     private final Object gameStartLock = new Object();
     private final AtomicBoolean gameHasStartedSignal = new AtomicBoolean(false);
-    private volatile BlackjackGame currentGame;
+
+    // ZMIANA: Użycie AtomicReference do bezpiecznego zarządzania referencją do obiektu gry
+    private final AtomicReference<BlackjackGame> currentGame = new AtomicReference<>();
 
     @Setter
     private Thread gameThread;
@@ -90,20 +93,20 @@ public class GameRoom implements Runnable {
                 break;
             }
 
-            // Pobierz świeże dane o kredytach przed rundą
             updateAllPlayerCredits();
-
             List<String> activePlayers = new ArrayList<>(this.players.keySet());
             log.info("Starting new round in room {} with players: {}", roomId, activePlayers);
 
-            this.currentGame = new BlackjackGame(this, deckServiceClient, messagingTemplate, activePlayers, gameHistoryService);
-            this.lastRoundWinners = this.currentGame.play();
+            // ZMIANA: Używamy .set() do aktualizacji referencji
+            this.currentGame.set(new BlackjackGame(this, deckServiceClient, messagingTemplate, activePlayers, gameHistoryService));
+            this.lastRoundWinners = this.currentGame.get().play();
 
             log.info("Round finished in room {}. Winners: {}. Starting 5 second countdown.", roomId, lastRoundWinners);
 
             for (int i = 5; i > 0; i--) {
-                if (this.currentGame != null) {
-                    this.currentGame.broadcastState("New round starting soon...", this.lastRoundWinners, i);
+                BlackjackGame game = this.currentGame.get(); // ZMIANA: Używamy .get() do odczytu
+                if (game != null) {
+                    game.broadcastState("New round starting soon...", this.lastRoundWinners, i);
                 }
                 try {
                     Thread.sleep(1000);
@@ -122,7 +125,6 @@ public class GameRoom implements Runnable {
         if (players.size() >= maxPlayers) {
             return false;
         }
-        // Pobierz dane gracza, w tym kredyty
         UserDetailsDto userDetails = userServiceClient.getUserByUsername(playerId);
         if (userDetails == null) {
             log.error("Cannot find user details for {}", playerId);
@@ -136,8 +138,9 @@ public class GameRoom implements Runnable {
         notifyChatService(playerId + " has joined the room.");
         broadcastPlayersUpdate();
 
-        if (currentGame != null) {
-            currentGame.broadcastState("You are spectating. Waiting for the next round.", this.lastRoundWinners, null);
+        BlackjackGame game = currentGame.get(); // ZMIANA: Używamy .get()
+        if (game != null) {
+            game.broadcastState("You are spectating. Waiting for the next round.", this.lastRoundWinners, null);
         }
         return true;
     }
@@ -145,8 +148,9 @@ public class GameRoom implements Runnable {
     public boolean leave(String playerId) {
         if (players.remove(playerId) != null) {
             log.info("Player {} left room {}", playerId, roomId);
-            if (this.currentGame != null && playerId.equals(this.currentGame.getCurrentPlayerId())) {
-                this.currentGame.skipCurrentPlayerTurn();
+            BlackjackGame game = this.currentGame.get(); // ZMIANA: Używamy .get()
+            if (game != null && playerId.equals(game.getCurrentPlayerId())) {
+                game.skipCurrentPlayerTurn();
             }
             notifyChatService(playerId + " has left the room.");
             broadcastPlayersUpdate();
@@ -175,13 +179,11 @@ public class GameRoom implements Runnable {
 
     private void broadcastPlayersUpdate() {
         String topic = "/topic/room/" + this.roomId + "/players";
-        // Przesyłamy kolekcję obiektów PlayerDto
         Map<String, Collection<PlayerDto>> payload = Map.of("players", this.players.values());
         messagingTemplate.convertAndSend(topic, payload);
         log.info("Broadcasted player list update to topic {}", topic);
     }
 
-    // ... pozostałe metody (signalGameStart, handlePlayerAction, generateJoinCode, notifyChatService) ...
     public void signalGameStart() {
         if (gameHasStartedSignal.compareAndSet(false, true)) {
             synchronized (gameStartLock) {
@@ -191,8 +193,9 @@ public class GameRoom implements Runnable {
     }
 
     public void handlePlayerAction(String playerId, PlayerAction action) {
-        if(currentGame != null) {
-            currentGame.handlePlayerAction(playerId, action);
+        BlackjackGame game = currentGame.get(); // ZMIANA: Używamy .get()
+        if(game != null) {
+            game.handlePlayerAction(playerId, action);
         } else {
             log.warn("Action received but no game is running in room {}", roomId);
         }
@@ -213,7 +216,7 @@ public class GameRoom implements Runnable {
     }
 
     // Setter tylko na potrzeby testów jednostkowych
-    public void setCurrentGame(BlackjackGame currentGame) {
-        this.currentGame = currentGame;
+    public void setCurrentGame(BlackjackGame game) {
+        this.currentGame.set(game);
     }
 }

@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -24,13 +26,15 @@ public class BlackjackGame {
     private final List<String> activePlayers;
     private final GameHistoryService gameHistoryService;
     private long deckId;
-    private volatile GameStatus gameStatus;
+
+    // ZMIANA: Użycie klas atomowych dla bezpieczeństwa wątkowego
+    private final AtomicReference<GameStatus> gameStatus = new AtomicReference<>();
+    private final AtomicInteger currentPlayerIndex = new AtomicInteger(0);
 
     private final Map<String, List<CardDto>> playerHands = new ConcurrentHashMap<>();
     private final Map<String, PlayerStatus> playerStatuses = new ConcurrentHashMap<>();
     private List<CardDto> dealerHand = new ArrayList<>();
 
-    private volatile int currentPlayerIndex = 0;
     private final Object actionLock = new Object();
 
     public BlackjackGame(GameRoom room, DeckServiceClient deckService, SimpMessagingTemplate messagingTemplate, List<String> activePlayers, GameHistoryService gameHistoryService) {
@@ -39,7 +43,7 @@ public class BlackjackGame {
         this.messagingTemplate = messagingTemplate;
         this.activePlayers = activePlayers;
         this.gameHistoryService = gameHistoryService;
-        this.gameStatus = GameStatus.STARTING;
+        this.gameStatus.set(GameStatus.STARTING); // ZMIANA: Użycie .set()
     }
 
     public List<String> play() {
@@ -48,15 +52,18 @@ public class BlackjackGame {
             broadcastState("The round has started. Dealing cards.", null, null);
             dealInitialCards();
 
-            this.gameStatus = GameStatus.PLAYER_TURN;
-            for (currentPlayerIndex = 0; currentPlayerIndex < activePlayers.size(); currentPlayerIndex++) {
-                String currentPlayerId = activePlayers.get(currentPlayerIndex);
+            this.gameStatus.set(GameStatus.PLAYER_TURN); // ZMIANA: Użycie .set()
+
+            // ZMIANA: Pętla używa teraz AtomicInteger
+            for (int i = 0; i < activePlayers.size(); i++) {
+                currentPlayerIndex.set(i);
+                String currentPlayerId = activePlayers.get(i);
 
                 if (playerStatuses.get(currentPlayerId) == PlayerStatus.BLACKJACK) {
                     continue;
                 }
 
-                if (!room.getPlayers().containsKey(currentPlayerId)) { // POPRAWKA: teraz to działa, bo getPlayers() zwraca Map
+                if (!room.getPlayers().containsKey(currentPlayerId)) {
                     log.info("Player {} left before their turn. Skipping.", currentPlayerId);
                     continue;
                 }
@@ -77,11 +84,11 @@ public class BlackjackGame {
                 }
             }
 
-            this.gameStatus = GameStatus.DEALER_TURN;
+            this.gameStatus.set(GameStatus.DEALER_TURN); // ZMIANA: Użycie .set()
             broadcastState("Dealer's turn.", null, null);
             playDealerTurn();
 
-            this.gameStatus = GameStatus.ROUND_FINISHED;
+            this.gameStatus.set(GameStatus.ROUND_FINISHED); // ZMIANA: Użycie .set()
             return determineWinners();
 
         } catch (Exception e) {
@@ -101,7 +108,7 @@ public class BlackjackGame {
         BigDecimal entryFee = BigDecimal.valueOf(room.getEntryFee());
 
         for (String player : activePlayers) {
-            if (!room.getPlayers().containsKey(player)) continue; // POPRAWKA: teraz to działa
+            if (!room.getPlayers().containsKey(player)) continue;
 
             int playerValue = calculateHandValue(playerHands.get(player));
             PlayerStatus status = playerStatuses.get(player);
@@ -170,7 +177,8 @@ public class BlackjackGame {
     }
 
     public void handlePlayerAction(String playerId, PlayerAction action) {
-        if (!activePlayers.contains(playerId) || currentPlayerIndex >= activePlayers.size() || !Objects.equals(activePlayers.get(currentPlayerIndex), playerId) || gameStatus != GameStatus.PLAYER_TURN) {
+        // ZMIANA: Użycie .get() do odczytu wartości
+        if (!activePlayers.contains(playerId) || currentPlayerIndex.get() >= activePlayers.size() || !Objects.equals(activePlayers.get(currentPlayerIndex.get()), playerId) || gameStatus.get() != GameStatus.PLAYER_TURN) {
             log.warn("Player {} action out of turn or is not an active player.", playerId);
             return;
         }
@@ -224,6 +232,7 @@ public class BlackjackGame {
     private int calculateHandValue(List<CardDto> hand) {
         int value = 0;
         int aceCount = 0;
+        if (hand == null) return 0; // Dodatkowe zabezpieczenie
         for (CardDto card : hand) {
             if (card == null || card.value() == null) {
                 continue;
@@ -260,7 +269,8 @@ public class BlackjackGame {
                 ));
 
         List<CardDto> dealerCardsToSend = new ArrayList<>();
-        if (gameStatus == GameStatus.PLAYER_TURN || gameStatus == GameStatus.STARTING) {
+        // ZMIANA: Użycie .get() do odczytu wartości
+        if (gameStatus.get() == GameStatus.PLAYER_TURN || gameStatus.get() == GameStatus.STARTING) {
             if (!dealerHand.isEmpty()) {
                 dealerCardsToSend.add(dealerHand.get(0));
                 dealerCardsToSend.add(new CardDto("BK", "HIDDEN", null, null));
@@ -271,10 +281,10 @@ public class BlackjackGame {
 
         PlayerHandDto dealerHandDto = new PlayerHandDto("Dealer", dealerCardsToSend, calculateHandValue(dealerCardsToSend), "");
 
-        String currentTurnPlayer = (gameStatus == GameStatus.PLAYER_TURN && currentPlayerIndex < activePlayers.size()) ? activePlayers.get(currentPlayerIndex) : null;
+        String currentTurnPlayer = getCurrentPlayerId();
 
         GameStateDto state = new GameStateDto(
-                gameStatus.name(),
+                gameStatus.get().name(), // ZMIANA: Użycie .get()
                 playerHandsDto,
                 dealerHandDto,
                 currentTurnPlayer,
@@ -288,15 +298,16 @@ public class BlackjackGame {
     }
 
     public String getCurrentPlayerId() {
-        if (gameStatus == GameStatus.PLAYER_TURN && currentPlayerIndex < activePlayers.size()) {
-            return activePlayers.get(currentPlayerIndex);
+        // ZMIANA: Użycie .get() do odczytu wartości
+        if (gameStatus.get() == GameStatus.PLAYER_TURN && currentPlayerIndex.get() < activePlayers.size()) {
+            return activePlayers.get(currentPlayerIndex.get());
         }
         return null;
     }
 
     public void skipCurrentPlayerTurn() {
         synchronized (actionLock) {
-            actionLock.notify();
+            actionLock.notifyAll();
         }
     }
 }
