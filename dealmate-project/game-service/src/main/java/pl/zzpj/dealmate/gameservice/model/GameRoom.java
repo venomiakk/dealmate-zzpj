@@ -187,7 +187,7 @@ public class GameRoom implements Runnable {
     public void signalGameStart() {
         if (gameHasStartedSignal.compareAndSet(false, true)) {
             synchronized (gameStartLock) {
-                gameStartLock.notify();
+                gameStartLock.notifyAll();
             }
         }
     }

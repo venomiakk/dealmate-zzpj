@@ -198,7 +198,7 @@ public class BlackjackGame {
             log.info("Player {} busted!", playerId);
             broadcastState("Player " + playerId + " busted!", null, null);
             synchronized (actionLock) {
-                actionLock.notify();
+                actionLock.notifyAll();
             }
         } else {
             broadcastState(null, null, null);
@@ -210,7 +210,7 @@ public class BlackjackGame {
         playerStatuses.put(playerId, PlayerStatus.STAND);
         broadcastState("Player " + playerId + " stands.", null, null);
         synchronized (actionLock) {
-            actionLock.notify();
+            actionLock.notifyAll();
         }
     }
 
