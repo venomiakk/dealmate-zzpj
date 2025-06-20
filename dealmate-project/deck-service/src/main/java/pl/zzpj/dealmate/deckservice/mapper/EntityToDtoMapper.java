@@ -9,6 +9,7 @@ public class EntityToDtoMapper {
 
     public static DeckDTO toDeckDTO(DeckEntity entity) {
         DeckDTO dto = new DeckDTO();
+        dto.setId(entity.getId());
         dto.setDeckId(entity.getDeckId());
         dto.setShuffled(entity.isShuffled());
         dto.setRemainingCards(entity.getRemainingCards());
