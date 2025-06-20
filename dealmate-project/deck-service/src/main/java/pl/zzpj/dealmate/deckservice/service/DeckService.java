@@ -21,7 +21,7 @@ import java.util.List;
 
 @Service
 public class DeckService {
-    //TODO: Consider using async WebClient because RestTemplate is deprecated
+    //*: Consider using async WebClient because RestTemplate is deprecated
     private final RestTemplate restTemplate;
     private final DeckRepository deckRepository;
     private final PileRepository pileRepository;

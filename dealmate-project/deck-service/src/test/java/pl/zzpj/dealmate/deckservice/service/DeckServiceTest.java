@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class DeckServiceFullTest {
+class DeckServiceTest {
 
     @Mock
     private RestTemplate restTemplate;
@@ -85,7 +85,9 @@ class DeckServiceFullTest {
     @Test
     void shouldDrawCardsFromDeck() {
         DrawCardsApiResponse response = new DrawCardsApiResponse();
-        List<CardDTO> cards = List.of(new CardDTO() {{ setCode("AS"); }});
+        CardDTO card = new CardDTO();
+        card.setCode("AS");
+        List<CardDTO> cards = List.of(card);
         response.setCards(cards);
         response.setRemaining(51);
 

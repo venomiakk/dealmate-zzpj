@@ -13,7 +13,7 @@ import pl.zzpj.dealmate.deckservice.model.DeckEntity;
 import pl.zzpj.dealmate.deckservice.model.PileEntity;
 import pl.zzpj.dealmate.deckservice.service.DeckService;
 
-import java.util.ArrayList;
+import javax.smartcardio.Card;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -169,8 +169,12 @@ class DeckControllerTest {
 
     @Test
     void shouldListCardsInPile() {
-        List<CardDTO> cards = List.of(new CardDTO() {{ setCode("AS"); }}, new CardDTO() {{ setCode("2S"); }});
-        when(deckService.getCardsFromPile(1L, "testPile")).thenReturn(cards);
+        CardDTO card1 = new CardDTO();
+        card1.setCode("AS");
+        CardDTO card2 = new CardDTO();
+        card2.setCode("2S");
+
+        when(deckService.getCardsFromPile(1L, "testPile")).thenReturn(List.of(card1, card2));
 
         ResponseEntity<List<CardDTO>> response = deckController.listPileCards(1L, "testPile");
 
@@ -180,8 +184,9 @@ class DeckControllerTest {
 
     @Test
     void shouldDrawSpecificCardsFromPile() {
-        List<CardDTO> cards = List.of(new CardDTO() {{ setCode("AS"); }});
-        when(deckService.drawSpecificCardsFromPile(1L, "testPile", List.of("AS"))).thenReturn(cards);
+        CardDTO card = new CardDTO();
+        card.setCode("AS");
+        when(deckService.drawSpecificCardsFromPile(1L, "testPile", List.of("AS"))).thenReturn(List.of(card));
 
         ResponseEntity<List<CardDTO>> response = deckController.drawSpecificCardsFromPile(1L, "testPile", List.of("AS"));
 
@@ -191,8 +196,10 @@ class DeckControllerTest {
 
     @Test
     void shouldDrawCountFromPile() {
-        List<CardDTO> cards = List.of(new CardDTO() {{ setCode("KH"); }});
-        when(deckService.drawCountFromPile(1L, "testPile", 1)).thenReturn(cards);
+        CardDTO card = new CardDTO();
+        card.setCode("KH");
+
+        when(deckService.drawCountFromPile(1L, "testPile", 1)).thenReturn(List.of(card));
 
         ResponseEntity<List<CardDTO>> response = deckController.drawCountFromPile(1L, "testPile", 1);
 
@@ -202,8 +209,10 @@ class DeckControllerTest {
 
     @Test
     void shouldDrawBottomFromPile() {
-        List<CardDTO> cards = List.of(new CardDTO() {{ setCode("QD"); }});
-        when(deckService.drawBottomFromPile(1L, "testPile")).thenReturn(cards);
+        CardDTO card = new CardDTO();
+        card.setCode("QD");
+
+        when(deckService.drawBottomFromPile(1L, "testPile")).thenReturn(List.of(card));
 
         ResponseEntity<List<CardDTO>> response = deckController.drawBottomFromPile(1L, "testPile");
 
@@ -213,8 +222,10 @@ class DeckControllerTest {
 
     @Test
     void shouldDrawRandomFromPile() {
-        List<CardDTO> cards = List.of(new CardDTO() {{ setCode("9C"); }});
-        when(deckService.drawRandomFromPile(1L, "testPile")).thenReturn(cards);
+        CardDTO cardDTO = new CardDTO();
+        cardDTO.setCode("9C");
+
+        when(deckService.drawRandomFromPile(1L, "testPile")).thenReturn(List.of(cardDTO));
 
         ResponseEntity<List<CardDTO>> response = deckController.drawRandomFromPile(1L, "testPile");
 
