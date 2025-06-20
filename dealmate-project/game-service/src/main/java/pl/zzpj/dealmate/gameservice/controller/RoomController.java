@@ -1,5 +1,6 @@
 package pl.zzpj.dealmate.gameservice.controller;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -16,34 +17,11 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/game")
+@RequiredArgsConstructor
 public class RoomController {
 
     private final RoomManager roomManager;
     private final UserServiceClient userServiceClient;
-
-    public RoomController(RoomManager roomManager, UserServiceClient userServiceClient) {
-        this.roomManager = roomManager;
-        this.userServiceClient = userServiceClient;
-    }
-
-    @PostMapping("/{roomId}/start")
-    public ResponseEntity<?> startGame(@PathVariable String roomId, Authentication auth) {
-        String playerId = auth.getName();
-        log.info("Player {} is attempting to start the game in room {}", playerId, roomId);
-        return roomManager.getRoomById(roomId)
-                .map(room -> {
-                    if (!room.getOwnerLogin().equals(playerId)) {
-                        log.warn("Player {} is not the owner of room {}", playerId, roomId);
-                        return ResponseEntity.status(403).body("Only the room owner can start the game.");
-                    }
-                    if (room.getPlayers().isEmpty()) {
-                        return ResponseEntity.badRequest().body("Cannot start an empty game.");
-                    }
-                    room.signalGameStart();
-                    return ResponseEntity.ok("Game start signal sent.");
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
 
     @PostMapping("/create")
     public ResponseEntity<?> createRoom(Authentication auth, @RequestBody CreateRoomRequest request) {
@@ -67,7 +45,7 @@ public class RoomController {
         room.join(playerId);
 
         return ResponseEntity.ok()
-                .body(new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers(),
+                .body(new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers().values(),
                         room.getName(), room.getGameType(), room.getMaxPlayers(), room.isPublic(), room.getOwnerLogin(),
                         room.getEntryFee()));
     }
@@ -75,30 +53,41 @@ public class RoomController {
     @PostMapping("/{roomId}/join")
     public ResponseEntity<?> joinRoom(@PathVariable String roomId, Authentication auth) {
         String playerId = auth.getName();
-        GameRoom room = roomManager.getRoomById(roomId)
-                .orElse(null);
+        GameRoom room = roomManager.getRoomById(roomId).orElse(null);
         if (room == null) {
-            log.error("Room not found: {}", roomId);
             return ResponseEntity.notFound().build();
         }
         UserDetailsDto user = userServiceClient.getUserByUsername(playerId);
         if (user == null) {
-            log.error("User not found while joining room: {}", playerId);
             return ResponseEntity.badRequest().body("User not found");
         }
         if (room.getEntryFee() > 0) {
             if (user.credits() == null || user.credits() < room.getEntryFee()) {
-                log.error("User {} does not have enough credits ({}) to join room {} with entry fee {}",
-                        playerId, user.credits(), roomId, room.getEntryFee());
                 return ResponseEntity.badRequest().body("Not enough credits to join a room");
             }
         }
-
         if (room.join(playerId)) {
             return ResponseEntity.ok("Player " + playerId + " joined room " + roomId);
         } else {
-            return ResponseEntity.badRequest().body("Failed to join room, it might be full or game already started.");
+            return ResponseEntity.badRequest().body("Failed to join room, it might be full.");
         }
+    }
+
+    @PostMapping("/{roomId}/start")
+    public ResponseEntity<?> startGame(@PathVariable String roomId, Authentication auth) {
+        String playerId = auth.getName();
+        return roomManager.getRoomById(roomId)
+                .map(room -> {
+                    if (!room.getOwnerLogin().equals(playerId)) {
+                        return ResponseEntity.status(403).body("Only the room owner can start the game.");
+                    }
+                    if (room.getPlayers().isEmpty()) {
+                        return ResponseEntity.badRequest().body("Cannot start an empty game.");
+                    }
+                    room.signalGameStart();
+                    return ResponseEntity.ok("Game start signal sent.");
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/{roomId}/leave")
@@ -145,7 +134,7 @@ public class RoomController {
     @GetMapping
     public ResponseEntity<List<RoomInfo>> listAllRooms() {
         List<RoomInfo> result = roomManager.getAllRooms().stream()
-                .map(room -> new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers(),
+                .map(room -> new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers().values(),
                         room.getName(), room.getGameType(), room.getMaxPlayers(), room.isPublic(), room.getOwnerLogin(),
                         room.getEntryFee()))
                 .toList();
@@ -156,7 +145,7 @@ public class RoomController {
     public ResponseEntity<RoomInfo> getRoomById(@PathVariable String roomId) {
         log.info("Request to get room by ID: {}", roomId);
         return roomManager.getRoomById(roomId)
-                .map(room -> new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers(),
+                .map(room -> new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers().values(),
                         room.getName(), room.getGameType(), room.getMaxPlayers(), room.isPublic(), room.getOwnerLogin(),
                         room.getEntryFee()))
                 .map(ResponseEntity::ok)

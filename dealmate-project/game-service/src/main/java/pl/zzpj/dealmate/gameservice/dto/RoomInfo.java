@@ -1,11 +1,11 @@
 package pl.zzpj.dealmate.gameservice.dto;
 
-import java.util.Set; // Make sure to import Set
+import java.util.Collection;
 
 public record RoomInfo(
         String roomId,
         String joinCode,
-        Set<String> players, // Ensure this is Set<String>
+        Collection<PlayerDto> players,
         String name,
         String gameType,
         int maxPlayers,

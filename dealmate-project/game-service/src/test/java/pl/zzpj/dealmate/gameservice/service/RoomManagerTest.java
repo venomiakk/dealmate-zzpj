@@ -1,113 +1,122 @@
 package pl.zzpj.dealmate.gameservice.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import pl.zzpj.dealmate.gameservice.client.ChatServiceClient;
+import pl.zzpj.dealmate.gameservice.client.DeckServiceClient;
+import pl.zzpj.dealmate.gameservice.client.UserServiceClient;
 import pl.zzpj.dealmate.gameservice.dto.CreateRoomRequest;
 import pl.zzpj.dealmate.gameservice.model.EGameType;
 import pl.zzpj.dealmate.gameservice.model.GameRoom;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.mock;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class RoomManagerTest {
 
-    @Mock
-    private ChatServiceClient chatServiceClient;
+    @Mock private ChatServiceClient chatServiceClient;
+    @Mock private DeckServiceClient deckServiceClient;
+    @Mock private UserServiceClient userServiceClient;
+    @Mock private GameHistoryService gameHistoryService;
+    @Mock private SimpMessagingTemplate messagingTemplate;
+
+    @InjectMocks
+    private RoomManager roomManager;
+
+    private CreateRoomRequest request;
+
+    @BeforeEach
+    void setUp() {
+        request = new CreateRoomRequest(
+                "ownerLogin", "Test Room", EGameType.BLACKJACK, 4, true, 0L);
+    }
 
     @Test
-    void testCreateRoom() {
+    void shouldCreateAndStoreRoom() {
+        // When
+        GameRoom room = roomManager.createRoom(request);
+
+        // Then
+        assertThat(room).isNotNull();
+        assertThat(room.getName()).isEqualTo("Test Room");
+        assertThat(room.getOwnerLogin()).isEqualTo("ownerLogin");
+
+        Optional<GameRoom> retrievedRoom = roomManager.getRoomById(room.getRoomId());
+        assertThat(retrievedRoom).isPresent();
+        assertThat(retrievedRoom.get()).isEqualTo(room);
+    }
+
+    @Test
+    void shouldReturnRoomByIdWhenExists() {
         // Given
-//        RoomManager roomManager = new RoomManager(chatServiceClient);
-//        CreateRoomRequest request = new CreateRoomRequest(
-//                "ownerLogin",
-//                "Test Room",
-//                EGameType.BLACKJACK,
-//                4,
-//                true,
-//                null);
-//        // When
-//        GameRoom room = roomManager.createRoom(request);
-//
-//        // Then
-//        assertThat(room).isNotNull();
-//        assertThat(room.getRoomId()).isNotEmpty();
-//        assertThat(room.getJoinCode()).isNotEmpty();
-//        assertThat(room.getName()).isEqualTo("Test Room");
-//        //assertThat(room.getGameType()).isEqualTo(EGameType.TEXAS_HOLDEM);
-//        assertThat(room.getMaxPlayers()).isEqualTo(4);
-//        assertThat(room.isPublic()).isTrue();
-//        assertThat(room.getPlayers().size()).isEqualTo(0); // Initially no players in the room
-//        // Verify that the room is added to the manager's collection
-//        assertThat(roomManager.getRoomById(room.getRoomId())).isPresent();
+        GameRoom room = roomManager.createRoom(request);
+
+        // When
+        Optional<GameRoom> foundRoom = roomManager.getRoomById(room.getRoomId());
+
+        // Then
+        assertThat(foundRoom).isPresent().contains(room);
     }
 
     @Test
-    void testGetRoomById() {
-//        // Given
-//        RoomManager roomManager = new RoomManager(chatServiceClient);
-//        CreateRoomRequest request = new CreateRoomRequest(
-//                "ownerLogin",
-//                "Test Room",
-//                EGameType.BLACKJACK,
-//                4,
-//                true,
-//                null);
-//        GameRoom room = roomManager.createRoom(request);
-//
-//        // When
-//        var retrievedRoom = roomManager.getRoomById(room.getRoomId());
-//
-//        // Then
-//        assertThat(retrievedRoom).isPresent();
-//        assertThat(retrievedRoom).contains(room);
+    void shouldReturnEmptyOptionalForNonExistentRoomId() {
+        // When
+        Optional<GameRoom> notFoundRoom = roomManager.getRoomById("non-existent-id");
+
+        // Then
+        assertThat(notFoundRoom).isNotPresent();
     }
 
     @Test
-    void testGetRoomByJoinCode() {
-//        // Given
-//        RoomManager roomManager = new RoomManager(chatServiceClient);
-//        CreateRoomRequest request = new CreateRoomRequest(
-//                "ownerLogin",
-//                "Test Room",
-//                EGameType.BLACKJACK,
-//                4,
-//                true,
-//                null);
-//        GameRoom room = roomManager.createRoom(request);
-//
-//        // When
-//        var retrievedRoom = roomManager.getRoomByJoinCode(room.getJoinCode());
-//
-//        // Then
-//        assertThat(retrievedRoom).isPresent();
-//        assertThat(retrievedRoom).contains(room);
+    void shouldReturnRoomByJoinCode() {
+        // Given
+        GameRoom room1 = roomManager.createRoom(request);
+        // Tworzymy drugi pokój, aby upewnić się, że znajdujemy właściwy
+        CreateRoomRequest request2 = new CreateRoomRequest(
+                "owner2", "Room 2", EGameType.BLACKJACK, 2, true, 10L);
+        roomManager.createRoom(request2);
+
+        // When
+        Optional<GameRoom> foundRoom = roomManager.getRoomByJoinCode(room1.getJoinCode());
+
+        // Then
+        assertThat(foundRoom).isPresent();
+        assertThat(foundRoom.get().getRoomId()).isEqualTo(room1.getRoomId());
     }
 
     @Test
-    void testGetAllRooms() {
-//        // Given
-//        RoomManager roomManager = new RoomManager(chatServiceClient);
-//        CreateRoomRequest request = new CreateRoomRequest(
-//                "ownerLogin",
-//                "Test Room",
-//                EGameType.BLACKJACK,
-//                4,
-//                true,
-//                null);
-//        GameRoom room1 = roomManager.createRoom(request);
-//        GameRoom room2 = roomManager.createRoom(request);
-//
-//        // When
-//        var allRooms = roomManager.getAllRooms();
-//
-//        // Then
-//        assertThat(allRooms.size()).isEqualTo(2);
-//        assertThat(allRooms.contains(room1)).isTrue();
-//        assertThat(allRooms.contains(room2)).isTrue();
+    void shouldRemoveRoomById() {
+        // Given
+        GameRoom room = roomManager.createRoom(request);
+        String roomId = room.getRoomId();
+        assertThat(roomManager.getRoomById(roomId)).isPresent();
+
+        // When
+        roomManager.removeRoom(roomId);
+
+        // Then
+        assertThat(roomManager.getRoomById(roomId)).isNotPresent();
+    }
+
+    @Test
+    void shouldReturnAllCreatedRooms() {
+        // Given
+        GameRoom room1 = roomManager.createRoom(request);
+        CreateRoomRequest request2 = new CreateRoomRequest(
+                "owner2", "Room 2", EGameType.BLACKJACK, 2, true, 10L);
+        GameRoom room2 = roomManager.createRoom(request2);
+
+        // When
+        var allRooms = roomManager.getAllRooms();
+
+        // Then
+        assertThat(allRooms).hasSize(2).containsExactlyInAnyOrder(room1, room2);
     }
 }
