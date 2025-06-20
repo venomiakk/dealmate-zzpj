@@ -212,7 +212,7 @@ class UserControllerTest {
         // When
         when(userService.updateUserCredits(username, credits)).thenReturn(user);
         // Then
-        mockMvc.perform(patch("/user/update/credits/{username}", username)
+        mockMvc.perform(post("/user/update/credits/{username}", username)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(credits)))
                 .andExpect(status().isOk())
@@ -233,7 +233,7 @@ class UserControllerTest {
                 .thenThrow(new UserWithLoginDoesntExistException(username));
 
         // Then
-        mockMvc.perform(patch("/user/update/credits/{username}", username)
+        mockMvc.perform(post("/user/update/credits/{username}", username)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(credits)))
                 .andExpect(status().isNotFound())
