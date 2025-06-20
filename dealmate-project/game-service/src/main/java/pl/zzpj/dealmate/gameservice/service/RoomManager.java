@@ -1,8 +1,10 @@
 package pl.zzpj.dealmate.gameservice.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import pl.zzpj.dealmate.gameservice.client.ChatServiceClient;
+import pl.zzpj.dealmate.gameservice.client.DeckServiceClient;
 import pl.zzpj.dealmate.gameservice.dto.CreateRoomRequest;
 import pl.zzpj.dealmate.gameservice.model.GameRoom;
 
@@ -10,23 +12,26 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.extern.slf4j.Slf4j; // Import Slf4j for logging
 
-@Slf4j // Add Slf4j annotation
+@Slf4j
 @Service
 public class RoomManager {
     private final Map<String, GameRoom> rooms = new ConcurrentHashMap<>();
-    private final ChatServiceClient chatServiceClient; // <-- Nowe pole
+    private final ChatServiceClient chatServiceClient;
+    private final DeckServiceClient deckServiceClient;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public RoomManager(ChatServiceClient chatServiceClient) { // <-- Zaktualizowany konstruktor
+    public RoomManager(ChatServiceClient chatServiceClient, DeckServiceClient deckServiceClient, SimpMessagingTemplate messagingTemplate) {
         this.chatServiceClient = chatServiceClient;
+        this.deckServiceClient = deckServiceClient;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public GameRoom createRoom(CreateRoomRequest request) {
-        // Przekaż klienta do konstruktora GameRoom
-        GameRoom room = new GameRoom(request, this, chatServiceClient);
+        GameRoom room = new GameRoom(request, this, chatServiceClient, deckServiceClient, messagingTemplate);
         rooms.put(room.getRoomId(), room);
-        log.info("RoomManager created room with ID: {}", room.getRoomId());
+        Thread.ofVirtual().start(room); // Start the virtual thread for the room
+        log.info("RoomManager created room with ID: {} and started its virtual thread.", room.getRoomId());
         return room;
     }
 
@@ -44,13 +49,10 @@ public class RoomManager {
         return rooms.values();
     }
 
-    // New method to remove a room
     public void removeRoom(String roomId) {
         GameRoom removedRoom = rooms.remove(roomId);
         if (removedRoom != null) {
             log.info("Room {} removed from RoomManager.", roomId);
-// Optionally, send a message to a general topic about room deletion
-// This is already handled by GameRoom.leave() for `sendRoomUpdateToAllRoomsTopic`
         } else {
             log.warn("Attempted to remove non-existent room: {}", roomId);
         }

@@ -12,7 +12,6 @@ import pl.zzpj.dealmate.gameservice.model.GameRoom;
 import pl.zzpj.dealmate.gameservice.service.RoomManager;
 
 import java.util.List;
-import java.util.Set; // Import Set as it's used in RoomInfo
 
 @Slf4j
 @RestController
@@ -27,6 +26,25 @@ public class RoomController {
         this.userServiceClient = userServiceClient;
     }
 
+    @PostMapping("/{roomId}/start")
+    public ResponseEntity<?> startGame(@PathVariable String roomId, Authentication auth) {
+        String playerId = auth.getName();
+        log.info("Player {} is attempting to start the game in room {}", playerId, roomId);
+        return roomManager.getRoomById(roomId)
+                .map(room -> {
+                    if (!room.getOwnerLogin().equals(playerId)) {
+                        log.warn("Player {} is not the owner of room {}", playerId, roomId);
+                        return ResponseEntity.status(403).body("Only the room owner can start the game.");
+                    }
+                    if (room.getPlayers().isEmpty()) {
+                        return ResponseEntity.badRequest().body("Cannot start an empty game.");
+                    }
+                    room.signalGameStart();
+                    return ResponseEntity.ok("Game start signal sent.");
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/create")
     public ResponseEntity<?> createRoom(Authentication auth, @RequestBody CreateRoomRequest request) {
         String playerId = auth.getName();
@@ -36,20 +54,17 @@ public class RoomController {
             log.error("User not found while creating room: {}", playerId);
             return ResponseEntity.badRequest().body("User not found");
         }
-// Simplified credit check for demonstration.
-// In a real app, you'd manage transactions carefully.
         if (request.entryFee() > 0) {
             if (user.credits() == null || user.credits() < request.entryFee()) {
                 log.error("User {} does not have enough credits ({}) to create room with entry fee {}",
                         playerId, user.credits(), request.entryFee());
                 return ResponseEntity.badRequest().body("Not enough credits to create a room");
             }
-// Deduction of credits would happen here or after game completion
         }
 
         log.info("Creating room: {}", request);
         GameRoom room = roomManager.createRoom(request);
-        room.join(playerId); // Player joins immediately after creating
+        room.join(playerId);
 
         return ResponseEntity.ok()
                 .body(new RoomInfo(room.getRoomId(), room.getJoinCode(), room.getPlayers(),
@@ -77,13 +92,12 @@ public class RoomController {
                         playerId, user.credits(), roomId, room.getEntryFee());
                 return ResponseEntity.badRequest().body("Not enough credits to join a room");
             }
-// Deduction of credits would happen here or after game completion
         }
 
         if (room.join(playerId)) {
             return ResponseEntity.ok("Player " + playerId + " joined room " + roomId);
         } else {
-            return ResponseEntity.badRequest().body("Failed to join room, it might be full.");
+            return ResponseEntity.badRequest().body("Failed to join room, it might be full or game already started.");
         }
     }
 
@@ -120,12 +134,11 @@ public class RoomController {
                         playerId, user.credits(), code, room.getEntryFee());
                 return ResponseEntity.badRequest().body("Not enough credits to join a room by code");
             }
-// Deduction of credits would happen here or after game completion
         }
         if (room.join(playerId)) {
             return ResponseEntity.ok("Player " + playerId + " joined room by code " + code);
         } else {
-            return ResponseEntity.badRequest().body("Failed to join room by code, it might be full.");
+            return ResponseEntity.badRequest().body("Failed to join room by code, it might be full or game already started.");
         }
     }
 

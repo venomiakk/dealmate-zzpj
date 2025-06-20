@@ -1,6 +1,5 @@
 export const GAME_TYPES = [
-    { value: 'TEXAS_HOLDEM', label: 'Texas Holdem' },
-    { value: 'FIVE_CARDS_DRAW', label: 'Five Cards Draw' },
+    { value: 'BLACKJACK', label: 'Blackjack' },
 ]
 
 export const MAX_PLAYERS_OPTIONS = [
