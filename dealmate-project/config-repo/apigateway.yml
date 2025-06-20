@@ -78,6 +78,13 @@ spring:
           predicates:
             - Path=/ws-chat/**
 
+        - id: ai-service
+          uri: lb://AISERVICE
+          predicates:
+            - Path=/aiservice/**
+          filters:
+            - StripPrefix=1
+
 logging:
   level:
     org.springframework.cloud.gateway: TRACE

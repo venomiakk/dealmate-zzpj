@@ -4,10 +4,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 public record PokerAiRequest(
-        @NotEmpty List<CardDto> deck,
-        List<CardDto> discardPile,
-        @NotEmpty List<CardDto> hand,
-        List<CardDto> tableCards,
+        @NotEmpty int dealer,
+        @NotEmpty int hand
 
-        @NotNull PokerGameType gameType
 ) {}

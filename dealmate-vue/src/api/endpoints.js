@@ -18,3 +18,7 @@ export const gameService = {
     startGame: (roomId) => `${API_GATEWAY_URL}/gameservice/game/${roomId}/start`,
     fetchHistory: (userLogin) => `${API_GATEWAY_URL}/gameservice/history/${userLogin}`,
 }
+
+export const aiService = {
+    getAHint: `${API_GATEWAY_URL}/aiservice/ai/suggest-move`,
+}

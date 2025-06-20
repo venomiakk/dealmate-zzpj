@@ -36,6 +36,8 @@
                                     Next round in {{ gameState.nextRoundCountdown }}s...
                                 </h4>
                                 <h5 class="pot-info">Pot: {{ gameState.pot || 0 }}</h5>
+                                <!-- DODAJEMY WYŚWIETLANIE PODPOWIEDZI AI -->
+                                
                             </div>
                             <div class="hand-area player-hand">
                                 <h5 class="area-title">Your Hand ({{ myHandValue }}) - {{ myStatus }}</h5>
@@ -44,6 +46,13 @@
                                         {{ getCardSymbol(card) }}
                                     </div>
                                 </div>
+                                <!-- PODPOWIEDŹ AI POD KARTAMI GRACZA -->
+                                <transition name="fade">
+                                    <div v-if="aiHint" class="ai-hint mt-3">
+                                        <strong>AI Hint:</strong> {{ aiHint }}
+                                        <button class="btn btn-sm btn-link ms-2" @click="aiHint = ''">Ukryj</button>
+                                    </div>
+                                </transition>
                             </div>
 
                             <div v-if="isMyTurn" class="player-actions text-center mt-3">
@@ -52,6 +61,9 @@
                                 </button>
                                 <button @click="performAction('STAND')" class="btn btn-lg btn-warning mx-2">
                                     <i class="fas fa-hand-paper me-2"></i>Stand
+                                </button>
+                                <button @click="getAHint()" class="btn btn-lg btn-warning mx-2">
+                                    <i class="fas fa-hand-paper me-2"></i>HINT
                                 </button>
                             </div>
                         </template>
@@ -142,7 +154,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { auth, authState } from '@/auth/auth';
 import axios from '@/services/axios';
-import { gameService } from '@/api/endpoints';
+import { gameService, aiService} from '@/api/endpoints';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
@@ -168,6 +180,16 @@ const dealerHandValue = computed(() => {
     if (gameState.value.dealerHand?.cards?.some(c => c.value === 'HIDDEN')) return '?';
     return gameState.value.dealerHand?.value || 0;
 });
+
+const dealerVisibleValue = computed(() =>
+    gameState.value.dealerHand?.cards
+        ?.filter(c => c.value !== 'HIDDEN')
+        .reduce((sum, c) => {
+            if (c.value === 'A') return sum + 11;
+            if (['K', 'Q', 'J'].includes(c.value)) return sum + 10;
+            return sum + Number(c.value);
+        }, 0) || 0
+);
 const isMyTurn = computed(() => gameState.value.currentPlayerId === currentUserLogin.value && myStatus.value === 'PLAYING');
 const canHit = computed(() => myStatus.value === 'PLAYING');
 const otherPlayers = computed(() => {
@@ -183,6 +205,9 @@ const chatMessages = ref([]);
 const newMessage = ref('');
 const chatMessagesContainer = ref(null);
 const isChatConnected = ref(false);
+
+// Dodaj ref na podpowiedź AI
+const aiHint = ref('');
 
 const fetchRoomData = async () => {
     try {
@@ -297,6 +322,25 @@ const performAction = (actionType) => {
         body: JSON.stringify(requestBody)
     });
 };
+
+const getAHint = async () => {
+    const requestBody = {
+        dealer: dealerVisibleValue.value,
+        hand: myHandValue.value,
+    };
+
+    console.log('Wysyłam zapytanie o podpowiedź:', requestBody);
+
+    try {
+        const response = await axios.post(aiService.getAHint, requestBody);
+        console.log("Podpowiedź od AI:", response.data);
+        aiHint.value = response.data // ZAPISUJEMY podpowiedź do ref
+    } catch (error) {
+        console.error('Błąd przy uzyskiwaniu podpowiedzi:', error);
+        aiHint.value = error.response?.data?.message || 'Nie udało się pobrać podpowiedzi.';
+    }
+};
+
 
 const sendMessage = () => {
     if (!newMessage.value.trim() || !isChatConnected.value || !stompClient.value.chat.active) return;
@@ -443,4 +487,21 @@ align-items: center; justify-content: center; font-size: 1rem; font-weight: bold
 .chat-message.own-message .message-content { background: #0d6efd; color: white; border-bottom-right-radius: .25rem; }
 .system-message .message-content { background: transparent; font-style: italic; color: #6c757d; text-align: center; width: 100%; }
 .system-message .message-wrapper { width: 100%; max-width: 100%; text-align: center; }
+.ai-hint {
+    background: #222;
+    color: #ffd700;
+    border: 2px solid #ffd700;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 1.2em;
+    font-weight: 700;
+}
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
 </style>

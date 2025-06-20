@@ -8,10 +8,10 @@ server:
 spring:
   ai:
     openai:
-      api-key: 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
+      api-key: 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
 
-base_url: https://api.groq.com/openai
-ai_model:  llama3-70b-8192
+base_url: https://api.groq.com/openai/v1/chat/completions
+ai_model:  meta-llama/llama-4-scout-17b-16e-instruct
 ai_temperature:  0.7
 
 

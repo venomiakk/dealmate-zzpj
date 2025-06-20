@@ -23,7 +23,7 @@ public class GroqClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         Map<String, Object> body = Map.of(
-                "model", "mixtral-8x7b-32768",
+                "model", "meta-llama/llama-4-scout-17b-16e-instruct",
                 "messages", new Object[]{
                         Map.of("role", "system", "content", "You're a poker move advisor."),
                         Map.of("role", "user", "content", prompt)
