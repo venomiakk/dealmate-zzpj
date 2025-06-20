@@ -37,6 +37,7 @@ import RoomComponent from './RoomCard.vue'
 import CreateRoomModal from './CreateRoomModal.vue'
 import { gameService } from '@/api/endpoints'
 import { useRouter } from 'vue-router'
+import { authState } from '@/auth/auth'
 
 const router = useRouter()
 const rooms = ref([])
@@ -57,20 +58,26 @@ const fetchRooms = async () => {
 
 const createRoom = async (roomConfig) => {
     try {
-        console.log('Creating room with config:', roomConfig)
-        const response = await axios.post(gameService.createRoom, roomConfig)
-        console.log('Room created:', response.data)
+        const requestPayload = {
+            ...roomConfig,
+            ownerLogin: authState.login 
+        };
+        console.log('Creating room with config:', requestPayload);
+
+        // POPRAWKA: Usuwamy nawiasy () po gameService.createRoom
+        const response = await axios.post(gameService.createRoom, requestPayload);
+        
+        console.log('Room created:', response.data);
         router.push({
-            name: 'room',
+            name: 'room', 
             params: { roomId: response.data.roomId },
-            state: { roomData: response.data },
-        })
-        await fetchRooms()
+        });
     } catch (error) {
-        console.error('Error creating room:', error)
-        alert('Failed to create room.')
+        console.error('Error creating room:', error.response?.data || error.message);
+        alert('Failed to create room. ' + (error.response?.data || ''));
     }
-}
+};
+
 
 const joinRoom = async (room) => {
     try {

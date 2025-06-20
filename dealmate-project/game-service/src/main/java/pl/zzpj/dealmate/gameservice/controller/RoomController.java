@@ -12,7 +12,6 @@ import pl.zzpj.dealmate.gameservice.model.GameRoom;
 import pl.zzpj.dealmate.gameservice.service.RoomManager;
 
 import java.util.List;
-import java.util.Set;
 
 @Slf4j
 @RestController
@@ -27,11 +26,24 @@ public class RoomController {
         this.userServiceClient = userServiceClient;
     }
 
-    //TODO: Move this kind of validation to a service layer
-    // Then handle it with global exception handler
-    // Remember to change in tests later
-    // Later, when user service will be ready, we can set user credits to 0 if they are null
-    //* Credits should be updated after game is finished, not when room is created or joined
+    @PostMapping("/{roomId}/start")
+    public ResponseEntity<?> startGame(@PathVariable String roomId, Authentication auth) {
+        String playerId = auth.getName();
+        log.info("Player {} is attempting to start the game in room {}", playerId, roomId);
+        return roomManager.getRoomById(roomId)
+                .map(room -> {
+                    if (!room.getOwnerLogin().equals(playerId)) {
+                        log.warn("Player {} is not the owner of room {}", playerId, roomId);
+                        return ResponseEntity.status(403).body("Only the room owner can start the game.");
+                    }
+                    if (room.getPlayers().isEmpty()) {
+                        return ResponseEntity.badRequest().body("Cannot start an empty game.");
+                    }
+                    room.signalGameStart();
+                    return ResponseEntity.ok("Game start signal sent.");
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 
     @PostMapping("/create")
     public ResponseEntity<?> createRoom(Authentication auth, @RequestBody CreateRoomRequest request) {
@@ -42,14 +54,14 @@ public class RoomController {
             log.error("User not found while creating room: {}", playerId);
             return ResponseEntity.badRequest().body("User not found");
         }
-        if (user.credits() == null && request.entryFee() > 0) {
-            log.error("User {} has no credits to create room", playerId);
-            return ResponseEntity.badRequest().body("User has no credits");
+        if (request.entryFee() > 0) {
+            if (user.credits() == null || user.credits() < request.entryFee()) {
+                log.error("User {} does not have enough credits ({}) to create room with entry fee {}",
+                        playerId, user.credits(), request.entryFee());
+                return ResponseEntity.badRequest().body("Not enough credits to create a room");
+            }
         }
-        if (user.credits() != null && user.credits() < request.entryFee()) {
-            log.error("User {} does not have enough credits to create a room", playerId);
-            return ResponseEntity.badRequest().body("Not enough credits to create a room");
-        }
+
         log.info("Creating room: {}", request);
         GameRoom room = roomManager.createRoom(request);
         room.join(playerId);
@@ -74,19 +86,19 @@ public class RoomController {
             log.error("User not found while joining room: {}", playerId);
             return ResponseEntity.badRequest().body("User not found");
         }
-        if (user.credits() == null  && room.getEntryFee() > 0) {
-            log.error("User {} has no credits to join the room", playerId);
-            return ResponseEntity.badRequest().body("User has no credits");
+        if (room.getEntryFee() > 0) {
+            if (user.credits() == null || user.credits() < room.getEntryFee()) {
+                log.error("User {} does not have enough credits ({}) to join room {} with entry fee {}",
+                        playerId, user.credits(), roomId, room.getEntryFee());
+                return ResponseEntity.badRequest().body("Not enough credits to join a room");
+            }
         }
-        if (user.credits() != null && user.credits() < room.getEntryFee()) {
-            log.error("User {} does not have enough credits to join a room", playerId);
-            return ResponseEntity.badRequest().body("Not enough credits to join a room");
+
+        if (room.join(playerId)) {
+            return ResponseEntity.ok("Player " + playerId + " joined room " + roomId);
+        } else {
+            return ResponseEntity.badRequest().body("Failed to join room, it might be full or game already started.");
         }
-        return roomManager.getRoomById(roomId)
-                .map(m -> {
-                    m.join(playerId);
-                    return ResponseEntity.ok("Player " + playerId + " joined room " + roomId);
-                }).orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/{roomId}/leave")
@@ -94,8 +106,11 @@ public class RoomController {
         String playerId = auth.getName();
         return roomManager.getRoomById(roomId)
                 .map(room -> {
-                    room.leave(playerId);
-                    return ResponseEntity.ok("Player " + playerId + " left room " + roomId);
+                    if (room.leave(playerId)) {
+                        return ResponseEntity.ok("Player " + playerId + " left room " + roomId);
+                    } else {
+                        return ResponseEntity.badRequest().body("Player " + playerId + " was not in room " + roomId);
+                    }
                 }).orElse(ResponseEntity.notFound().build());
     }
 
@@ -113,19 +128,18 @@ public class RoomController {
             log.error("User not found while joining room by code: {}", playerId);
             return ResponseEntity.badRequest().body("User not found");
         }
-        if (user.credits() == null && room.getEntryFee() > 0) {
-            log.error("User {} has no credits to join the room by code", playerId);
-            return ResponseEntity.badRequest().body("User has no credits");
+        if (room.getEntryFee() > 0) {
+            if (user.credits() == null || user.credits() < room.getEntryFee()) {
+                log.error("User {} does not have enough credits ({}) to join room by code {} with entry fee {}",
+                        playerId, user.credits(), code, room.getEntryFee());
+                return ResponseEntity.badRequest().body("Not enough credits to join a room by code");
+            }
         }
-        if (user.credits() != null && user.credits() < room.getEntryFee()) {
-            log.error("User {} does not have enough credits to join a room by code", playerId);
-            return ResponseEntity.badRequest().body("Not enough credits to join a room by code");
+        if (room.join(playerId)) {
+            return ResponseEntity.ok("Player " + playerId + " joined room by code " + code);
+        } else {
+            return ResponseEntity.badRequest().body("Failed to join room by code, it might be full or game already started.");
         }
-        return roomManager.getRoomByJoinCode(code)
-                .map(rm -> {
-                    rm.join(playerId);
-                    return ResponseEntity.ok("Player " + playerId + " joined room by code " + code);
-                }).orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping
@@ -149,5 +163,3 @@ public class RoomController {
                 .orElse(ResponseEntity.notFound().build());
     }
 }
-
-

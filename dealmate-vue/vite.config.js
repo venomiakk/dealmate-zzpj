@@ -15,4 +15,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  // --- DODAJ TĘ SEKCJĘ ---
+  define: {
+    global: 'window',
+  },
+  // -------------------------
 })

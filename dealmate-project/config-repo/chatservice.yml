@@ -7,7 +7,16 @@ server:
 spring:
   config:
     import: dbconnection.yml
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://127.0.0.1:9000
 
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.authorization: TRACE
 # * turn off the discovery client for testing purposes
 #eureka:
 #  client:

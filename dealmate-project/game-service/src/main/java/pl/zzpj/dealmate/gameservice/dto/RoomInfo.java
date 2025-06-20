@@ -1,18 +1,16 @@
 package pl.zzpj.dealmate.gameservice.dto;
 
-import pl.zzpj.dealmate.gameservice.model.EGameType;
-
-import java.util.Set;
+import java.util.Set; // Make sure to import Set
 
 public record RoomInfo(
         String roomId,
         String joinCode,
-        Set<String> players,
+        Set<String> players, // Ensure this is Set<String>
         String name,
-        EGameType gameType,
+        String gameType,
         int maxPlayers,
         boolean isPublic,
         String ownerLogin,
-        Long entryFee
+        double entryFee
 ) {
 }

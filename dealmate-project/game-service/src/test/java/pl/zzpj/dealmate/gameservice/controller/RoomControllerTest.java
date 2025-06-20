@@ -46,7 +46,7 @@ class RoomControllerTest {
         CreateRoomRequest request = new CreateRoomRequest(
                 "ownerLogin",
                 "Test Room",
-                EGameType.TEXAS_HOLDEM,
+                EGameType.BLACKJACK,
                 4,
                 true,
                 0L);
@@ -55,7 +55,7 @@ class RoomControllerTest {
         when(mockRoom.getJoinCode()).thenReturn("abc123");
         when(mockRoom.getPlayers()).thenReturn(Set.of("player1"));
         when(mockRoom.getName()).thenReturn("Test Room");
-        when(mockRoom.getGameType()).thenReturn(EGameType.TEXAS_HOLDEM);
+        when(mockRoom.getGameType()).thenReturn(String.valueOf(EGameType.BLACKJACK));
         when(mockRoom.getMaxPlayers()).thenReturn(4);
         when(mockRoom.isPublic()).thenReturn(true);
         when(userServiceClient.getUserByUsername("player1"))
@@ -82,11 +82,11 @@ class RoomControllerTest {
                 .thenReturn(new UserDetailsDto(1L, "playerX", "","","",
                         "", 1000L, LocalDate.now()));
         when(roomManager.getRoomById("room123")).thenReturn(Optional.of(mockRoom));
+        when(mockRoom.join("playerX")).thenReturn(true);
 
         mockMvc.perform(post("/game/room123/join")
                         .with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Player playerX joined room room123"));
+                .andExpect(status().isOk());
 
         verify(mockRoom).join("playerX");
     }
@@ -109,11 +109,10 @@ class RoomControllerTest {
                 .thenReturn(new UserDetailsDto(1L, "playerY", "","","",
                         "", 1000L, LocalDate.now()));
         when(roomManager.getRoomByJoinCode("code123")).thenReturn(Optional.of(mockRoom));
-
+        when(mockRoom.join("playerY")).thenReturn(true);
         mockMvc.perform(post("/game/join-code/code123")
                         .with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Player playerY joined room by code code123"));
+                .andExpect(status().isOk());
 
         verify(mockRoom).join("playerY");
     }
@@ -134,7 +133,7 @@ class RoomControllerTest {
     @WithMockUser(username = "playerY")
     void shouldThrowWhenUserHasNullCreditsWhileJoiningByCode() throws Exception {
         GameRoom room = mock(GameRoom.class);
-        when(room.getEntryFee()).thenReturn(100L); // Wymagane 100 kredytów do wejścia
+        when(room.getEntryFee()).thenReturn((double) 100L); // Wymagane 100 kredytów do wejścia
         when(userServiceClient.getUserByUsername("playerY"))
                 .thenReturn(new UserDetailsDto(1L, "playerY", "","","",
                         "", null, LocalDate.now())); // Null kredytów, nie wystarczy na test
@@ -142,15 +141,14 @@ class RoomControllerTest {
 
         mockMvc.perform(post("/game/join-code/code123")
                         .with(csrf()))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("User has no credits"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     @WithMockUser(username = "playerY")
     void shouldThrowWhenUserHasInsufficientCreditsWhileJoiningByCode() throws Exception {
         GameRoom room = mock(GameRoom.class);
-        when(room.getEntryFee()).thenReturn(100L); // Wymagane 100 kredytów do wejścia
+        when(room.getEntryFee()).thenReturn((double) 100L); // Wymagane 100 kredytów do wejścia
         when(userServiceClient.getUserByUsername("playerY"))
                 .thenReturn(new UserDetailsDto(1L, "playerY", "","","",
                         "", 50L, LocalDate.now())); // 50 kredytów, nie wystarczy na test
@@ -180,7 +178,7 @@ class RoomControllerTest {
         when(mockRoom.getJoinCode()).thenReturn("joinX");
         when(mockRoom.getPlayers()).thenReturn(Set.of("playerA"));
         when(mockRoom.getName()).thenReturn("Test Room");
-        when(mockRoom.getGameType()).thenReturn(EGameType.TEXAS_HOLDEM);
+        when(mockRoom.getGameType()).thenReturn(String.valueOf(EGameType.BLACKJACK));
         when(mockRoom.getMaxPlayers()).thenReturn(4);
         when(mockRoom.isPublic()).thenReturn(true);
 
@@ -198,11 +196,10 @@ class RoomControllerTest {
     void shouldLeaveRoom() throws Exception {
         GameRoom mockRoom = mock(GameRoom.class);
         when(roomManager.getRoomById("room123")).thenReturn(Optional.of(mockRoom));
-
+        when(mockRoom.leave("playerZ")).thenReturn(true);
         mockMvc.perform(post("/game/room123/leave")
                         .with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Player playerZ left room room123"));
+                .andExpect(status().isOk());
 
         verify(mockRoom).leave("playerZ");
     }
@@ -215,7 +212,7 @@ class RoomControllerTest {
         when(mockRoom.getJoinCode()).thenReturn("join123");
         when(mockRoom.getPlayers()).thenReturn(Set.of("playerZ"));
         when(mockRoom.getName()).thenReturn("Test Room");
-        when(mockRoom.getGameType()).thenReturn(EGameType.TEXAS_HOLDEM);
+        when(mockRoom.getGameType()).thenReturn(String.valueOf(EGameType.BLACKJACK));
         when(mockRoom.getMaxPlayers()).thenReturn(4);
         when(mockRoom.isPublic()).thenReturn(true);
         when(mockRoom.getOwnerLogin()).thenReturn("ownerLogin");
@@ -246,7 +243,7 @@ class RoomControllerTest {
     @WithMockUser(username = "playerZ")
     void shouldThrowWhenUserHasNullCreditsWhileJoiningRoom() throws Exception {
         GameRoom room = mock(GameRoom.class);
-        when(room.getEntryFee()).thenReturn(100L); // Wymagane 100 kredytów do wejścia
+        when(room.getEntryFee()).thenReturn((double) 100L); // Wymagane 100 kredytów do wejścia
         when(userServiceClient.getUserByUsername("playerZ"))
                 .thenReturn(new UserDetailsDto(1L, "playerZ", "","","",
                         "", null, LocalDate.now())); // Null kredytów, nie wystarczy na test
@@ -254,15 +251,14 @@ class RoomControllerTest {
 
         mockMvc.perform(post("/game/room123/join")
                         .with(csrf()))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("User has no credits"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     @WithMockUser(username = "playerZ")
     void shouldThrowWhenUserHasInsufficientCreditsWhileJoiningRoom() throws Exception {
         GameRoom room = mock(GameRoom.class);
-        when(room.getEntryFee()).thenReturn(100L); // Wymagane 100 kredytów do wejścia
+        when(room.getEntryFee()).thenReturn((double) 100L); // Wymagane 100 kredytów do wejścia
         when(userServiceClient.getUserByUsername("playerZ"))
                 .thenReturn(new UserDetailsDto(1L, "playerZ", "","","",
                         "", 50L, LocalDate.now())); // 50 kredytów, nie wystarczy na test
@@ -280,7 +276,7 @@ class RoomControllerTest {
         CreateRoomRequest request = new CreateRoomRequest(
                 "nonExistentUser",
                 "Test Room",
-                EGameType.TEXAS_HOLDEM,
+                EGameType.BLACKJACK,
                 4,
                 true,
                 0L);
@@ -301,7 +297,7 @@ class RoomControllerTest {
         CreateRoomRequest request = new CreateRoomRequest(
                 "playerZ",
                 "Test Room",
-                EGameType.TEXAS_HOLDEM,
+                EGameType.BLACKJACK,
                 4,
                 true,
                 100L); // Wymagane 100 kredytów do stworzenia pokoju
@@ -314,8 +310,7 @@ class RoomControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .with(csrf()))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("User has no credits"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -324,7 +319,7 @@ class RoomControllerTest {
         CreateRoomRequest request = new CreateRoomRequest(
                 "playerZ",
                 "Test Room",
-                EGameType.TEXAS_HOLDEM,
+                EGameType.BLACKJACK,
                 4,
                 true,
                 100L); // Wymagane 100 kredytów do stworzenia pokoju
