@@ -10,8 +10,6 @@ import pl.zzpj.dealmate.gameservice.game.dto.GameActionRequest;
 import pl.zzpj.dealmate.gameservice.game.dto.PlayerAction;
 import pl.zzpj.dealmate.gameservice.service.RoomManager;
 
-// Usunięto import java.security.Principal, bo nie jest już potrzebny
-
 @Slf4j
 @Controller
 @RequiredArgsConstructor

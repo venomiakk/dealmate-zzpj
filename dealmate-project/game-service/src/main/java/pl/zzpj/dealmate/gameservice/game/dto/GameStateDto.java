@@ -11,5 +11,6 @@ public record GameStateDto(
         String currentPlayerId,
         BigDecimal pot,
         List<String> winners,
-        String message
+        String message,
+        Integer nextRoundCountdown
 ) {}

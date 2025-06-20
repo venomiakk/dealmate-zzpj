@@ -1,10 +1,12 @@
 package pl.zzpj.dealmate.gameservice.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import pl.zzpj.dealmate.gameservice.client.ChatServiceClient;
 import pl.zzpj.dealmate.gameservice.client.DeckServiceClient;
+import pl.zzpj.dealmate.gameservice.client.UserServiceClient; 
 import pl.zzpj.dealmate.gameservice.dto.CreateRoomRequest;
 import pl.zzpj.dealmate.gameservice.model.GameRoom;
 
@@ -15,22 +17,22 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class RoomManager {
     private final Map<String, GameRoom> rooms = new ConcurrentHashMap<>();
     private final ChatServiceClient chatServiceClient;
     private final DeckServiceClient deckServiceClient;
     private final SimpMessagingTemplate messagingTemplate;
-
-    public RoomManager(ChatServiceClient chatServiceClient, DeckServiceClient deckServiceClient, SimpMessagingTemplate messagingTemplate) {
-        this.chatServiceClient = chatServiceClient;
-        this.deckServiceClient = deckServiceClient;
-        this.messagingTemplate = messagingTemplate;
-    }
+    private final UserServiceClient userServiceClient;
+    private final GameHistoryService gameHistoryService;
 
     public GameRoom createRoom(CreateRoomRequest request) {
-        GameRoom room = new GameRoom(request, this, chatServiceClient, deckServiceClient, messagingTemplate);
+        GameRoom room = new GameRoom(request, this, userServiceClient, chatServiceClient, deckServiceClient, gameHistoryService, messagingTemplate);
         rooms.put(room.getRoomId(), room);
-        Thread.ofVirtual().start(room); // Start the virtual thread for the room
+
+        Thread gameThread = Thread.ofVirtual().start(room);
+        room.setGameThread(gameThread);
+
         log.info("RoomManager created room with ID: {} and started its virtual thread.", room.getRoomId());
         return room;
     }

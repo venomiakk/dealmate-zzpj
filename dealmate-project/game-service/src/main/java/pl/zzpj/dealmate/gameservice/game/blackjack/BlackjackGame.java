@@ -5,9 +5,14 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import pl.zzpj.dealmate.gameservice.client.DeckServiceClient;
 import pl.zzpj.dealmate.gameservice.game.dto.*;
 import pl.zzpj.dealmate.gameservice.model.GameRoom;
+import pl.zzpj.dealmate.gameservice.model.GameResult;
+import pl.zzpj.dealmate.gameservice.service.GameHistoryService;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -16,7 +21,8 @@ public class BlackjackGame {
     private final GameRoom room;
     private final DeckServiceClient deckService;
     private final SimpMessagingTemplate messagingTemplate;
-    private final List<String> players;
+    private final List<String> activePlayers;
+    private final GameHistoryService gameHistoryService;
     private long deckId;
     private volatile GameStatus gameStatus;
 
@@ -27,72 +33,119 @@ public class BlackjackGame {
     private volatile int currentPlayerIndex = 0;
     private final Object actionLock = new Object();
 
-
-    public BlackjackGame(GameRoom room, DeckServiceClient deckService, SimpMessagingTemplate messagingTemplate) {
+    public BlackjackGame(GameRoom room, DeckServiceClient deckService, SimpMessagingTemplate messagingTemplate, List<String> activePlayers, GameHistoryService gameHistoryService) {
         this.room = room;
         this.deckService = deckService;
         this.messagingTemplate = messagingTemplate;
-        this.players = new ArrayList<>(room.getPlayers());
+        this.activePlayers = activePlayers;
+        this.gameHistoryService = gameHistoryService;
         this.gameStatus = GameStatus.STARTING;
     }
 
-    public void play() {
+    public List<String> play() {
         try {
             initializeGame();
-            broadcastState("The game has started. Dealing cards.", null);
+            broadcastState("The round has started. Dealing cards.", null, null);
             dealInitialCards();
 
-
-            // Player turns
             this.gameStatus = GameStatus.PLAYER_TURN;
-            for (currentPlayerIndex = 0; currentPlayerIndex < players.size(); currentPlayerIndex++) {
-                String currentPlayerId = players.get(currentPlayerIndex);
+            for (currentPlayerIndex = 0; currentPlayerIndex < activePlayers.size(); currentPlayerIndex++) {
+                String currentPlayerId = activePlayers.get(currentPlayerIndex);
 
-                if(playerStatuses.get(currentPlayerId) == PlayerStatus.BLACKJACK){
-                    continue; // Skip turn if player has blackjack
+                if (playerStatuses.get(currentPlayerId) == PlayerStatus.BLACKJACK) {
+                    continue;
                 }
 
-                broadcastState(currentPlayerId + "'s turn.", null);
+                if (!room.getPlayers().containsKey(currentPlayerId)) { // POPRAWKA: teraz to działa, bo getPlayers() zwraca Map
+                    log.info("Player {} left before their turn. Skipping.", currentPlayerId);
+                    continue;
+                }
 
-                // Wait for player action (Hit/Stand)
+                broadcastState(currentPlayerId + "'s turn.", null, null);
+
                 synchronized (actionLock) {
                     try {
-                        actionLock.wait(30000); // 30-second timeout
+                        actionLock.wait(30000);
                     } catch (InterruptedException e) {
-                        log.warn("Player {}'s turn was interrupted.", currentPlayerId);
                         Thread.currentThread().interrupt();
+                        log.warn("Player {}'s turn was interrupted, possibly by leaving.", currentPlayerId);
                     }
                 }
                 if (playerStatuses.get(currentPlayerId) == PlayerStatus.PLAYING) {
-                    log.info("Player {} timed out. Standing automatically.", currentPlayerId);
+                    log.info("Player {} timed out or left. Standing automatically.", currentPlayerId);
                     stand(currentPlayerId);
                 }
             }
 
-            // Dealer's turn
             this.gameStatus = GameStatus.DEALER_TURN;
-            broadcastState("Dealer's turn.", null);
+            broadcastState("Dealer's turn.", null, null);
             playDealerTurn();
 
-            // End of round
             this.gameStatus = GameStatus.ROUND_FINISHED;
-            determineWinners();
+            return determineWinners();
 
         } catch (Exception e) {
-            log.error("An error occurred during the game in room {}: {}", room.getRoomId(), e.getMessage(), e);
-            broadcastState("A critical error occurred. The game will be terminated.", null);
-        } finally {
-            log.info("Game finished in room {}", room.getRoomId());
-            this.gameStatus = GameStatus.GAME_OVER;
-            // The room will handle its own shutdown or restart logic
+            log.error("An error occurred during the round in room {}: {}", room.getRoomId(), e.getMessage(), e);
+            broadcastState("A critical error occurred in this round.", null, null);
+            return new ArrayList<>();
         }
     }
 
+    private List<String> determineWinners() {
+        int dealerValue = calculateHandValue(dealerHand);
+        boolean dealerBusted = dealerValue > 21;
+        List<String> winners = new ArrayList<>();
+        StringBuilder resultMessage = new StringBuilder("Round finished! ");
+        if(dealerBusted) resultMessage.append("Dealer busted. ");
+
+        BigDecimal entryFee = BigDecimal.valueOf(room.getEntryFee());
+
+        for (String player : activePlayers) {
+            if (!room.getPlayers().containsKey(player)) continue; // POPRAWKA: teraz to działa
+
+            int playerValue = calculateHandValue(playerHands.get(player));
+            PlayerStatus status = playerStatuses.get(player);
+            GameResult gameResult;
+
+            if (status == PlayerStatus.BUSTED) {
+                gameResult = GameResult.LOSS;
+            } else if (status == PlayerStatus.BLACKJACK && dealerValue != 21) {
+                winners.add(player);
+                gameResult = GameResult.BLACKJACK_WIN;
+            } else if (dealerBusted) {
+                winners.add(player);
+                gameResult = GameResult.WIN;
+            } else if (playerValue > dealerValue) {
+                winners.add(player);
+                gameResult = GameResult.WIN;
+            } else if (playerValue < dealerValue) {
+                gameResult = GameResult.LOSS;
+            } else {
+                gameResult = GameResult.PUSH;
+            }
+
+            try {
+                gameHistoryService.recordGameResults(player, gameResult, entryFee);
+            } catch (Exception e) {
+                log.error("Failed to record game result for player {}: {}", player, e.getMessage());
+            }
+        }
+
+        if(winners.isEmpty()){
+            resultMessage.append("Dealer wins.");
+        } else {
+            resultMessage.append("Winners: ").append(String.join(", ", winners));
+        }
+
+        broadcastState(resultMessage.toString(), winners, null);
+        return winners;
+    }
+
     private void initializeGame() {
-        log.info("Initializing Blackjack game in room {}", room.getRoomId());
+        log.info("Initializing new round in room {} with players: {}", room.getRoomId(), activePlayers);
         DeckDto deck = deckService.createDeck(1);
         this.deckId = deck.id();
-        players.forEach(p -> {
+        activePlayers.forEach(p -> {
             playerHands.put(p, new ArrayList<>());
             playerStatuses.put(p, PlayerStatus.PLAYING);
         });
@@ -100,17 +153,15 @@ public class BlackjackGame {
     }
 
     private void dealInitialCards() {
-        // Deal one card to each player, then one to dealer, repeat
         for (int i = 0; i < 2; i++) {
-            for (String player : players) {
+            for (String player : activePlayers) {
                 deckService.drawCards(deckId, 1).forEach(card -> playerHands.get(player).add(card));
             }
             deckService.drawCards(deckId, 1).forEach(card -> dealerHand.add(card));
         }
-        broadcastState(null, null);
+        broadcastState(null, null, null);
 
-        // Check for blackjacks
-        for (String player : players) {
+        for (String player : activePlayers) {
             if (calculateHandValue(playerHands.get(player)) == 21) {
                 playerStatuses.put(player, PlayerStatus.BLACKJACK);
                 log.info("Player {} has Blackjack!", player);
@@ -119,8 +170,8 @@ public class BlackjackGame {
     }
 
     public void handlePlayerAction(String playerId, PlayerAction action) {
-        if (!Objects.equals(players.get(currentPlayerIndex), playerId) || gameStatus != GameStatus.PLAYER_TURN) {
-            log.warn("Player {} action out of turn.", playerId);
+        if (!activePlayers.contains(playerId) || currentPlayerIndex >= activePlayers.size() || !Objects.equals(activePlayers.get(currentPlayerIndex), playerId) || gameStatus != GameStatus.PLAYER_TURN) {
+            log.warn("Player {} action out of turn or is not an active player.", playerId);
             return;
         }
 
@@ -137,21 +188,19 @@ public class BlackjackGame {
         if (handValue > 21) {
             playerStatuses.put(playerId, PlayerStatus.BUSTED);
             log.info("Player {} busted!", playerId);
-            broadcastState("Player " + playerId + " busted!", null);
-            // Notify the waiting thread to proceed to the next player
+            broadcastState("Player " + playerId + " busted!", null, null);
             synchronized (actionLock) {
                 actionLock.notify();
             }
         } else {
-            broadcastState(null, null);
+            broadcastState(null, null, null);
         }
     }
 
     private void stand(String playerId) {
         log.info("Player {} stands.", playerId);
         playerStatuses.put(playerId, PlayerStatus.STAND);
-        broadcastState("Player " + playerId + " stands.", null);
-        // Notify the waiting thread to proceed to the next player
+        broadcastState("Player " + playerId + " stands.", null, null);
         synchronized (actionLock) {
             actionLock.notify();
         }
@@ -160,46 +209,16 @@ public class BlackjackGame {
     private void playDealerTurn() {
         while (calculateHandValue(dealerHand) < 17) {
             try {
-                Thread.sleep(1500); // Pause for dramatic effect
+                Thread.sleep(1500);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                log.warn("Dealer's turn was interrupted during sleep.");
+                break;
             }
             deckService.drawCards(deckId, 1).forEach(dealerHand::add);
-            broadcastState("Dealer hits.", null);
+            broadcastState("Dealer hits.", null, null);
         }
-        broadcastState("Dealer stands.", null);
-    }
-
-    private void determineWinners() {
-        int dealerValue = calculateHandValue(dealerHand);
-        boolean dealerBusted = dealerValue > 21;
-        List<String> winners = new ArrayList<>();
-        StringBuilder resultMessage = new StringBuilder("Game over! ");
-        if(dealerBusted) resultMessage.append("Dealer busted. ");
-
-        for (String player : players) {
-            int playerValue = calculateHandValue(playerHands.get(player));
-            PlayerStatus status = playerStatuses.get(player);
-
-            if (status == PlayerStatus.BUSTED) {
-                // Player loses
-            } else if (status == PlayerStatus.BLACKJACK && dealerValue != 21) {
-                winners.add(player);
-            } else if (dealerBusted) {
-                winners.add(player);
-            } else {
-                if (playerValue > dealerValue) {
-                    winners.add(player);
-                }
-            }
-        }
-        if(winners.isEmpty()){
-            resultMessage.append("Dealer wins.");
-        } else {
-            resultMessage.append("Winners: ").append(String.join(", ", winners));
-        }
-
-        broadcastState(resultMessage.toString(), winners);
+        broadcastState("Dealer stands.", null, null);
     }
 
     private int calculateHandValue(List<CardDto> hand) {
@@ -215,9 +234,7 @@ public class BlackjackGame {
                     value += 11;
                 }
                 case "KING", "QUEEN", "JACK" -> value += 10;
-                case "HIDDEN" -> {
-                    // Nic nie rób, wartość tej karty to 0
-                }
+                case "HIDDEN" -> {}
                 default -> value += Integer.parseInt(card.value());
             }
         }
@@ -228,11 +245,10 @@ public class BlackjackGame {
         return value;
     }
 
-
-    private void broadcastState(String message, List<String> winners) {
+    public void broadcastState(String message, List<String> winners, Integer countdown) {
         String topic = "/topic/game/" + room.getRoomId();
 
-        Map<String, PlayerHandDto> playerHandsDto = players.stream()
+        Map<String, PlayerHandDto> playerHandsDto = activePlayers.stream()
                 .collect(Collectors.toMap(
                         p -> p,
                         p -> new PlayerHandDto(
@@ -246,28 +262,41 @@ public class BlackjackGame {
         List<CardDto> dealerCardsToSend = new ArrayList<>();
         if (gameStatus == GameStatus.PLAYER_TURN || gameStatus == GameStatus.STARTING) {
             if (!dealerHand.isEmpty()) {
-                dealerCardsToSend.add(dealerHand.get(0)); // Show only first card
-                dealerCardsToSend.add(new CardDto("BK", "HIDDEN", null, null)); // Placeholder for the second
+                dealerCardsToSend.add(dealerHand.get(0));
+                dealerCardsToSend.add(new CardDto("BK", "HIDDEN", null, null));
             }
         } else {
-            dealerCardsToSend.addAll(dealerHand); // Show all cards
+            dealerCardsToSend.addAll(dealerHand);
         }
 
         PlayerHandDto dealerHandDto = new PlayerHandDto("Dealer", dealerCardsToSend, calculateHandValue(dealerCardsToSend), "");
 
-        String currentTurnPlayer = (gameStatus == GameStatus.PLAYER_TURN && currentPlayerIndex < players.size()) ? players.get(currentPlayerIndex) : null;
+        String currentTurnPlayer = (gameStatus == GameStatus.PLAYER_TURN && currentPlayerIndex < activePlayers.size()) ? activePlayers.get(currentPlayerIndex) : null;
 
         GameStateDto state = new GameStateDto(
                 gameStatus.name(),
                 playerHandsDto,
                 dealerHandDto,
                 currentTurnPlayer,
-                BigDecimal.valueOf(room.getEntryFee() * room.getPlayers().size()),
+                BigDecimal.valueOf(room.getEntryFee() * activePlayers.size()),
                 winners,
-                message
+                message,
+                countdown
         );
 
-        log.debug("Broadcasting state to {}: {}", topic, state);
         messagingTemplate.convertAndSend(topic, state);
+    }
+
+    public String getCurrentPlayerId() {
+        if (gameStatus == GameStatus.PLAYER_TURN && currentPlayerIndex < activePlayers.size()) {
+            return activePlayers.get(currentPlayerIndex);
+        }
+        return null;
+    }
+
+    public void skipCurrentPlayerTurn() {
+        synchronized (actionLock) {
+            actionLock.notify();
+        }
     }
 }

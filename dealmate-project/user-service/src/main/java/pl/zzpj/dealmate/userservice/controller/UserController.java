@@ -50,7 +50,7 @@ public class UserController {
         return ResponseEntity.ok("User updated successfully");
     }
 
-    @PatchMapping("/update/credits/{username}")
+    @PostMapping("/update/credits/{username}")
     public ResponseEntity<String> updateUserCredits(@PathVariable String username, @RequestBody Long credits) {
         log.info("Updating user credits for {}: {}", username, credits);
         UserEntity user = userService.updateUserCredits(username, credits);

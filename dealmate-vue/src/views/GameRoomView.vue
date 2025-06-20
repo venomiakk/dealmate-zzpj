@@ -14,40 +14,49 @@
                     </div>
 
                     <div v-else class="blackjack-board">
-                        <div class="hand-area dealer-hand">
-                            <h5 class="area-title">Dealer's Hand ({{ dealerHandValue }})</h5>
-                            <div class="cards-container">
-                                <div v-for="(card, index) in gameState.dealerHand?.cards" :key="'dealer-' + index" class="card" :class="getCardClass(card)">
-                                    {{ card.code !== 'BK' ? getCardSymbol(card) : '' }}
+                        <div v-if="isSpectating" class="spectator-view text-center">
+                            <i class="fas fa-eye fa-3x mb-3 text-muted"></i>
+                            <h4>Game in progress...</h4>
+                            <p class="text-muted">You are spectating. Waiting for the next round to begin.</p>
+                        </div>
+                        
+                        <template v-else>
+                            <div class="hand-area dealer-hand">
+                                <h5 class="area-title">Dealer's Hand ({{ dealerHandValue }})</h5>
+                                <div class="cards-container">
+                                    <div v-for="(card, index) in gameState.dealerHand?.cards" :key="'dealer-' + index" class="card" :class="getCardClass(card)">
+                                        {{ card.code !== 'BK' ? getCardSymbol(card) : '' }}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="game-info text-center my-3">
-                            <h4 v-if="gameState.message" class="game-message">{{ gameState.message }}</h4>
-                            <h5 class="pot-info">Pot: {{ gameState.pot || 0 }}</h5>
-                            <div v-if="gameState.gameStatus === 'ROUND_FINISHED' || gameState.gameStatus === 'GAME_OVER'">
-                                <button @click="resetForNewRound" class="btn btn-primary mt-2">New Round</button>
+                            <div class="game-info text-center my-3">
+                                <h4 v-if="gameState.message" class="game-message">{{ gameState.message }}</h4>
+                                <h4 v-if="gameState.nextRoundCountdown > 0" class="countdown-message">
+                                    Next round in {{ gameState.nextRoundCountdown }}s...
+                                </h4>
+                                <h5 class="pot-info">Pot: {{ gameState.pot || 0 }}</h5>
                             </div>
-                        </div>
-                        <div class="hand-area player-hand">
-                             <h5 class="area-title">Your Hand ({{ myHandValue }}) - {{ myStatus }}</h5>
-                             <div class="cards-container">
-                                 <div v-for="(card, index) in myHand?.cards" :key="'player-' + index" class="card" :class="getCardClass(card)">
-                                     {{ getCardSymbol(card) }}
-                                 </div>
-                             </div>
-                        </div>
+                            <div class="hand-area player-hand">
+                                <h5 class="area-title">Your Hand ({{ myHandValue }}) - {{ myStatus }}</h5>
+                                <div class="cards-container">
+                                    <div v-for="(card, index) in myHand?.cards" :key="'player-' + index" class="card" :class="getCardClass(card)">
+                                        {{ getCardSymbol(card) }}
+                                    </div>
+                                </div>
+                            </div>
 
-                        <div v-if="isMyTurn" class="player-actions text-center mt-3">
-                            <button @click="performAction('HIT')" class="btn btn-lg btn-success mx-2" :disabled="!canHit">
-                                <i class="fas fa-plus-circle me-2"></i>Hit
-                            </button>
-                            <button @click="performAction('STAND')" class="btn btn-lg btn-warning mx-2">
-                                <i class="fas fa-hand-paper me-2"></i>Stand
-                            </button>
-                        </div>
-                         <div class="other-players-container">
+                            <div v-if="isMyTurn" class="player-actions text-center mt-3">
+                                <button @click="performAction('HIT')" class="btn btn-lg btn-success mx-2" :disabled="!canHit">
+                                    <i class="fas fa-plus-circle me-2"></i>Hit
+                                </button>
+                                <button @click="performAction('STAND')" class="btn btn-lg btn-warning mx-2">
+                                    <i class="fas fa-hand-paper me-2"></i>Stand
+                                </button>
+                            </div>
+                        </template>
+                        
+                        <div class="other-players-container">
                              <div v-for="player in otherPlayers" :key="player.playerId" class="other-player-hand">
                                  <h6>{{ player.playerId }} ({{ player.value }}) - {{player.status}}</h6>
                                  <div class="cards-container-small">
@@ -72,10 +81,20 @@
                             Players ({{ playersCount }}/{{ roomData.maxPlayers }})
                         </h6>
                         <div class="players-list">
-                            <div v-for="player in roomData.players" :key="player" class="player-item">
-                                <i class="fas fa-user-circle me-2"></i>{{ player }}
-                                <span v-if="player === gameState.currentPlayerId" class="badge bg-success ms-2">Turn</span>
-                                <span v-if="gameState.winners && gameState.winners.includes(player)" class="badge bg-warning ms-2">Winner!</span>
+                             <div v-for="player in roomData.players" :key="player.login" 
+                                 class="player-item"
+                                 :class="{ 'winner': gameState.winners && gameState.winners.includes(player.login) }">
+                                <div class="player-details">
+                                    <i class="fas fa-user-circle me-2"></i>
+                                    <span>{{ player.login }}</span>
+                                    <span v-if="player.login === gameState.currentPlayerId" class="badge bg-success ms-2">Turn</span>
+                                </div>
+                                <div class="player-credits">
+                                    <span class="badge rounded-pill bg-primary">
+                                        <i class="fas fa-coins me-1"></i>
+                                        {{ player.credits }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -89,29 +108,7 @@
                     </div>
                 </div>
                 <div class="chat-panel">
-                    <div class="chat-header"> <h6 class="mb-0"> <i class="fas fa-comments me-2"></i> Chat </h6> </div>
-                    <div class="chat-messages" ref="chatMessagesContainer">
-                        <div v-for="message in chatMessages" :key="message.id" class="chat-message" :class="{ 'own-message': message.senderId === currentUserLogin, 'system-message': message.isSystem }">
-                            <div class="message-wrapper">
-                                <div v-if="!message.isSystem" class="message-header">
-                                    <span class="sender-name">{{ message.senderName }}</span>
-                                    <span class="message-time">{{ formatTime(message.timestamp) }}</span>
-                                </div>
-                                <div class="message-content">{{ message.content }}</div>
-                            </div>
-                        </div>
                     </div>
-                    <div class="chat-input mt-auto">
-                        <form @submit.prevent="sendMessage">
-                            <div class="input-group">
-                                <input v-model="newMessage" type="text" class="form-control" placeholder="Type a message..." :disabled="!isChatConnected" />
-                                <button type="submit" class="btn btn-primary" :disabled="!newMessage.trim() || !isChatConnected">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -130,14 +127,12 @@ const route = useRoute();
 const router = useRouter();
 const roomId = computed(() => route.params.roomId);
 
-// Room & Player State
 const roomData = ref({ players: [] });
 const currentUserLogin = ref(authState.login);
 const isOwner = computed(() => roomData.value.ownerLogin === currentUserLogin.value);
 const playersCount = computed(() => Array.isArray(roomData.value.players) ? roomData.value.players.length : 0);
 const canStartGame = computed(() => playersCount.value >= 1 && !gameHasStarted.value);
 
-// Game State
 const gameHasStarted = ref(false);
 const gameState = ref({});
 const stompClient = ref(null);
@@ -157,13 +152,14 @@ const otherPlayers = computed(() => {
     return Object.values(gameState.value.playerHands).filter(p => p.playerId !== currentUserLogin.value);
 });
 
+const isSpectating = computed(() => {
+    return gameHasStarted.value && (!gameState.value.playerHands || !gameState.value.playerHands[currentUserLogin.value]);
+});
 
-// Chat State
 const chatMessages = ref([]);
 const newMessage = ref('');
 const chatMessagesContainer = ref(null);
 const isChatConnected = ref(false);
-
 
 const fetchRoomData = async () => {
     try {
@@ -202,7 +198,6 @@ const connectToWebsockets = async () => {
     }
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Game WebSocket
     const gameSocket = new SockJS('http://localhost:8104/ws');
     const gameClient = new Client({
         webSocketFactory: () => gameSocket,
@@ -229,7 +224,6 @@ const connectToWebsockets = async () => {
     });
     gameClient.activate();
 
-    // Chat WebSocket
     const chatSocket = new SockJS('http://localhost:8100/ws-chat');
     const chatClient = new Client({
         webSocketFactory: () => chatSocket,
@@ -266,16 +260,10 @@ const connectToWebsockets = async () => {
     stompClient.value = { game: gameClient, chat: chatClient };
 };
 
-// =================================================================
-// ZMIANA: Wysyłamy teraz obiekt zgodny z GameActionRequest
-// =================================================================
 const performAction = (actionType) => {
     if (!isGameConnected.value || !stompClient.value.game.active) return;
     
-    // Tworzymy obiekt PlayerAction
-    const playerAction = { action: actionType }; // np. { "action": "HIT" }
-    
-    // Tworzymy główny obiekt żądania
+    const playerAction = { action: actionType };
     const requestBody = {
         action: playerAction,
         playerId: currentUserLogin.value
@@ -286,12 +274,6 @@ const performAction = (actionType) => {
         body: JSON.stringify(requestBody)
     });
 };
-
-const resetForNewRound = () => {
-    gameHasStarted.value = false;
-    gameState.value = {};
-    fetchRoomData();
-}
 
 const sendMessage = () => {
     if (!newMessage.value.trim() || !isChatConnected.value || !stompClient.value.chat.active) return;
@@ -314,7 +296,6 @@ const addSystemMessage = (content) => {
     scrollToBottom();
 };
 
-// UI Helpers
 const getCardSymbol = (card) => {
     if (!card || !card.code) return '';
     const suitSymbols = { 'S': '♠', 'H': '♥', 'D': '♦', 'C': '♣' };
@@ -346,16 +327,42 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Main Layout */
+.player-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.player-details {
+    display: flex;
+    align-items: center;
+}
+.player-item.winner {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    font-weight: bold;
+}
+
+.spectator-view, .waiting-area {
+    color: white;
+}
+.countdown-message {
+    color: #ffd700;
+    animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+}
+.player-item.winner {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    font-weight: bold;
+}
 .game-room-container { height: calc(100vh - 85px); padding: 1rem; overflow: hidden; background: #2c3e50; }
 .game-room-layout { display: flex; height: 100%; gap: 1rem; max-width: 1600px; margin: 0 auto; }
-
-/* Game Area */
 .game-area { flex: 1; background: rgba(0, 0, 0, 0.2); border-radius: 1rem; padding: 1.5rem; display: flex; align-items: center; justify-content: center; }
 .game-content { width: 100%; height: 100%; }
-.waiting-area { text-align: center; color: white; }
-
-/* Blackjack Board */
 .blackjack-board {
 display: flex;
 flex-direction: column;
@@ -367,8 +374,6 @@ color: white;
 .area-title { margin-bottom: 1rem; font-weight: bold; }
 .cards-container { display: flex; gap: .5rem; min-height: 120px; }
 .player-actions { padding: 1rem; }
-
-/* Cards */
 .card {
 width: 80px;
 height: 120px;
@@ -388,8 +393,6 @@ box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 background-image: linear-gradient(45deg, #2980b9, #3498db);
 color: transparent;
 }
-
-/* Other Players */
 .other-players-container { display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; }
 .other-player-hand { background: rgba(255,255,255,0.1); padding: .5rem; border-radius: .5rem; text-align: center; }
 .cards-container-small { display: flex; gap: .25rem; min-height: 70px; }
@@ -399,22 +402,15 @@ align-items: center; justify-content: center; font-size: 1rem; font-weight: bold
 }
 .card-small.red-card { color: #d63031; }
 .card-small.black-card { color: #2d3436; }
-
-
-/* Sidebar */
 .sidebar { width: 350px; display: flex; flex-direction: column; gap: 1rem; }
 .room-info-panel, .chat-panel { background: white; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 .room-info-panel { padding: 1.5rem; }
 .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-
-/* Room Info Panel Components */
 .room-header { padding-bottom: 1rem; border-bottom: 1px solid #dee2e6; }
 .room-title { color: #2c3e50; }
 .section-title { color: #495057; margin-top: 1.5rem; margin-bottom: 1rem; font-weight: 600; }
 .players-list { max-height: 200px; overflow-y: auto; }
 .player-item { padding: 0.75rem; background: #f8f9fa; border-radius: 0.5rem; margin-bottom: 0.5rem; display: flex; align-items: center; }
-
-/* Chat Panel Components */
 .chat-header { padding: 1rem 1.5rem; background: #f8f9fa; border-bottom: 1px solid #dee2e6; }
 .chat-messages { flex: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: .75rem; }
 .chat-input { padding: 1rem; }
