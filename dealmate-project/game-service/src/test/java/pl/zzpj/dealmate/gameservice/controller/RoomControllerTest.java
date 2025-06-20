@@ -46,7 +46,7 @@ class RoomControllerTest {
         CreateRoomRequest request = new CreateRoomRequest(
                 "ownerLogin",
                 "Test Room",
-                EGameType.TEXAS_HOLDEM,
+                EGameType.BLACKJACK,
                 4,
                 true,
                 0L);
@@ -55,7 +55,7 @@ class RoomControllerTest {
         when(mockRoom.getJoinCode()).thenReturn("abc123");
         when(mockRoom.getPlayers()).thenReturn(Set.of("player1"));
         when(mockRoom.getName()).thenReturn("Test Room");
-        when(mockRoom.getGameType()).thenReturn(String.valueOf(EGameType.TEXAS_HOLDEM));
+        when(mockRoom.getGameType()).thenReturn(String.valueOf(EGameType.BLACKJACK));
         when(mockRoom.getMaxPlayers()).thenReturn(4);
         when(mockRoom.isPublic()).thenReturn(true);
         when(userServiceClient.getUserByUsername("player1"))
@@ -178,7 +178,7 @@ class RoomControllerTest {
         when(mockRoom.getJoinCode()).thenReturn("joinX");
         when(mockRoom.getPlayers()).thenReturn(Set.of("playerA"));
         when(mockRoom.getName()).thenReturn("Test Room");
-        when(mockRoom.getGameType()).thenReturn(String.valueOf(EGameType.TEXAS_HOLDEM));
+        when(mockRoom.getGameType()).thenReturn(String.valueOf(EGameType.BLACKJACK));
         when(mockRoom.getMaxPlayers()).thenReturn(4);
         when(mockRoom.isPublic()).thenReturn(true);
 
@@ -212,7 +212,7 @@ class RoomControllerTest {
         when(mockRoom.getJoinCode()).thenReturn("join123");
         when(mockRoom.getPlayers()).thenReturn(Set.of("playerZ"));
         when(mockRoom.getName()).thenReturn("Test Room");
-        when(mockRoom.getGameType()).thenReturn(String.valueOf(EGameType.TEXAS_HOLDEM));
+        when(mockRoom.getGameType()).thenReturn(String.valueOf(EGameType.BLACKJACK));
         when(mockRoom.getMaxPlayers()).thenReturn(4);
         when(mockRoom.isPublic()).thenReturn(true);
         when(mockRoom.getOwnerLogin()).thenReturn("ownerLogin");
@@ -276,7 +276,7 @@ class RoomControllerTest {
         CreateRoomRequest request = new CreateRoomRequest(
                 "nonExistentUser",
                 "Test Room",
-                EGameType.TEXAS_HOLDEM,
+                EGameType.BLACKJACK,
                 4,
                 true,
                 0L);
@@ -297,7 +297,7 @@ class RoomControllerTest {
         CreateRoomRequest request = new CreateRoomRequest(
                 "playerZ",
                 "Test Room",
-                EGameType.TEXAS_HOLDEM,
+                EGameType.BLACKJACK,
                 4,
                 true,
                 100L); // Wymagane 100 kredytów do stworzenia pokoju
@@ -319,7 +319,7 @@ class RoomControllerTest {
         CreateRoomRequest request = new CreateRoomRequest(
                 "playerZ",
                 "Test Room",
-                EGameType.TEXAS_HOLDEM,
+                EGameType.BLACKJACK,
                 4,
                 true,
                 100L); // Wymagane 100 kredytów do stworzenia pokoju
