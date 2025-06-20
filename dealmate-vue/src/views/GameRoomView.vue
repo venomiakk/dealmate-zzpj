@@ -107,8 +107,31 @@
                         <button @click="leaveRoom" class="btn btn-outline-danger btn-sm">Leave Room</button>
                     </div>
                 </div>
+                <!-- ZMIANA: Przywrócono pełną zawartość panelu czatu -->
                 <div class="chat-panel">
+                    <div class="chat-header"> <h6 class="mb-0"> <i class="fas fa-comments me-2"></i> Chat </h6> </div>
+                    <div class="chat-messages" ref="chatMessagesContainer">
+                        <div v-for="message in chatMessages" :key="message.id" class="chat-message" :class="{ 'own-message': message.senderId === currentUserLogin, 'system-message': message.isSystem }">
+                            <div class="message-wrapper">
+                                <div v-if="!message.isSystem" class="message-header">
+                                    <span class="sender-name">{{ message.senderName }}</span>
+                                    <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                                </div>
+                                <div class="message-content">{{ message.content }}</div>
+                            </div>
+                        </div>
                     </div>
+                    <div class="chat-input mt-auto">
+                        <form @submit.prevent="sendMessage">
+                            <div class="input-group">
+                                <input v-model="newMessage" type="text" class="form-control" placeholder="Type a message..." :disabled="!isChatConnected" />
+                                <button type="submit" class="btn btn-primary" :disabled="!newMessage.trim() || !isChatConnected">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -341,7 +364,6 @@ onUnmounted(() => {
     border: 1px solid #ffeeba;
     font-weight: bold;
 }
-
 .spectator-view, .waiting-area {
     color: white;
 }
@@ -353,11 +375,6 @@ onUnmounted(() => {
     0% { transform: scale(1); opacity: 0.8; }
     50% { transform: scale(1.05); opacity: 1; }
     100% { transform: scale(1); opacity: 0.8; }
-}
-.player-item.winner {
-    background-color: #fff3cd;
-    border: 1px solid #ffeeba;
-    font-weight: bold;
 }
 .game-room-container { height: calc(100vh - 85px); padding: 1rem; overflow: hidden; background: #2c3e50; }
 .game-room-layout { display: flex; height: 100%; gap: 1rem; max-width: 1600px; margin: 0 auto; }
