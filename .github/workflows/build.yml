@@ -44,7 +44,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r dealmate-project/requirements.txt # Popraw ścieżkę, jeśli plik jest gdzie indziej
+          pip install -r dealmate-project/game-service/src/main/resources/python/requirements.txt # Popraw ścieżkę, jeśli plik jest gdzie indziej
 
       # 5. Cache'owanie zależności, aby przyspieszyć kolejne buildy
       - name: Cache SonarQube packages
