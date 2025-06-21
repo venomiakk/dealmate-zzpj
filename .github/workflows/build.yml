@@ -34,6 +34,33 @@ jobs:
           java-version: "24"
           distribution: "oracle"
 
+            # 3. DODANO: Ustawienie środowiska Pythona
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12' # Wersja, której używasz
+
+      # 4. DODANO: Instalacja zależności Pythona z pliku requirements.txt
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r dealmate-project/game-service/src/main/resources/python/requirements.txt # Popraw ścieżkę, jeśli plik jest gdzie indziej
+
+      # 5. Cache'owanie zależności, aby przyspieszyć kolejne buildy
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
       - name: Build and run Discovery Server
         run: |
           mvn -f dealmate-project/discovery-server/pom.xml spring-boot:run &

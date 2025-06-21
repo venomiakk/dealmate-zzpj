@@ -120,8 +120,17 @@
                 </div>
 
                 <div class="card mt-4">
-                    <div class="card-header">
-                        <h3 class="mb-0"><i class="fas fa-history me-2"></i>Game History</h3>
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <h3 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Game History
+                        </h3>
+                        <button
+                            class="btn btn-primary"
+                            @click="openGraphModal"
+                        >
+                            <i class="fas fa-chart-line me-1"></i>
+                            Generate Graph
+                        </button>
                     </div>
                     <div class="card-body p-0">
                         <div v-if="historyLoading" class="text-center p-4">
@@ -159,6 +168,42 @@
                     </div>
                 </div>
 
+                <!-- MODAL: Graph Image -->
+                <div
+                    v-if="showGraphModal"
+                    class="modal fade show"
+                    tabindex="-1"
+                    style="display: block; background: rgba(0,0,0,0.5);"
+                    @click.self="closeGraphModal"
+                >
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Game History Graph</h5>
+                                <button type="button" class="btn-close" @click="closeGraphModal"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <div v-if="graphLoading" class="py-4">
+                                    <div class="spinner-border" role="status"></div>
+                                    <span class="ms-2">Generating graph...</span>
+                                </div>
+                                <div v-else-if="graphError" class="alert alert-danger">
+                                    {{ graphError }}
+                                </div>
+                                <img
+                                    v-else-if="graphUrl"
+                                    :src="graphUrl"
+                                    alt="Game History Graph"
+                                    class="img-fluid rounded"
+                                    style="max-height: 400px;"
+                                />
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" @click="closeGraphModal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -195,6 +240,10 @@ const error = ref(null)
 const gameHistory = ref([]);
 const historyLoading = ref(true);
 const historyError = ref(null);
+const showGraphModal = ref(false);
+const graphLoading = ref(false);
+const graphError = ref(null);
+const graphUrl = ref('');
 
 // Default avatar
 const defaultAvatar = 'https://placehold.co/600x400?text=Profile+Picture'
@@ -279,91 +328,118 @@ const getResultClass = (result) => {
 };
 
 const getAmountClass = (amount) => {
-    if (amount > 0) return 'text-success fw-bold';
-    if (amount < 0) return 'text-danger fw-bold';
-    return 'text-muted';
+    if (amount >= 0) return 'text-success';
+    return 'text-danger';
 };
 
-const editProfile = () => {
-    router.push('/profile/edit')
-}
+// Fetch user profile and game history on mount
+onMounted(() => {
+    fetchUserProfile()
+    fetchGameHistory()
+})
 
-// ZMIANA: watch i onMounted teraz pobierają również historię
-watch(() => props.userLogin, (newLogin) => {
-    if (newLogin) {
+// Watchers
+watch(() => props.userLogin, (newLogin, oldLogin) => {
+    if (newLogin !== oldLogin) {
         fetchUserProfile()
         fetchGameHistory()
     }
-}, { immediate: false })
-
-onMounted(async () => {
-    if (!props.isPublicProfile && authState.isLoading) {
-        await auth.init()
-    }
-    if (!props.isPublicProfile && !authState.isAuthenticated) {
-        error.value = 'Please log in to view your profile'
-        isLoading.value = false
-        return
-    }
-    if (props.userLogin) {
-        await fetchUserProfile()
-        await fetchGameHistory()
-    }
 })
+
+// Modal state for graph
+const openGraphModal = async () => {
+    showGraphModal.value = true
+    graphUrl.value = ''
+    graphError.value = ''
+    graphLoading.value = true
+    try {
+        const response = await axios.get(gameService.generateGraph(props.userLogin))
+
+        // Jeśli backend zwraca base64 string – dodajemy prefix
+        graphUrl.value = 'data:image/png;base64,' + response.data
+
+        if (!graphUrl.value) throw new Error('No graph image returned')
+    } catch (err) {
+        console.error('Graph generation failed:', err)
+        graphError.value = 'Failed to generate graph.'
+    } finally {
+        graphLoading.value = false
+    }
+}
+const closeGraphModal = () => {
+    showGraphModal.value = false
+}
 </script>
 
 <style scoped>
-.avatar-img {
-    width: 150px;
-    height: 150px;
-    object-fit: cover;
-    border: 3px solid #dee2e6;
+.container {
+    max-width: 960px;
 }
+
 .avatar-container {
     position: relative;
     display: inline-block;
 }
-.card {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    border: 1px solid rgba(0, 0, 0, 0.125);
+
+.avatar-img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
 }
-.card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-}
-.badge {
-    font-size: 0.875em;
-}
+
 .flag-img {
-    width: 48px;
-    height: auto;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease;
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
 }
-.flag-img:hover {
-    transform: scale(1.05);
-}
+
 .country-name {
-    color: #495057;
     font-weight: 500;
-    transition: color 0.2s ease;
 }
-a:hover .country-name {
-    color: #007bff;
+
+.table th, .table td {
+    vertical-align: middle;
 }
-a:hover .flag-img {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+
+.badge {
+    font-size: 0.9rem;
 }
-/* ZMIANA: Dodano style dla tabeli historii */
-.table-responsive {
-    max-height: 400px;
-    overflow-y: auto;
+
+.modal-content {
+    background: #343a40;
+    color: #fff;
 }
-@media (max-width: 768px) {
-    .avatar-img {
-        width: 100px;
-        height: 100px;
-    }
+
+.modal-header {
+    border-bottom: 1px solid #495057;
+}
+
+.modal-footer {
+    border-top: 1px solid #495057;
+}
+
+.spinner-border {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.bg-success {
+    background-color: #28a745 !important;
+}
+
+.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.bg-secondary {
+    background-color: #6c757d !important;
 }
 </style>

@@ -17,6 +17,7 @@ export const gameService = {
     leaveRoom: (roomId) => `${API_GATEWAY_URL}/gameservice/game/${roomId}/leave`,
     startGame: (roomId) => `${API_GATEWAY_URL}/gameservice/game/${roomId}/start`,
     fetchHistory: (userLogin) => `${API_GATEWAY_URL}/gameservice/history/${userLogin}`,
+    generateGraph: (login) => `${API_GATEWAY_URL}/gameservice/history/generateGraph/${login}`,
 }
 
 export const aiService = {
