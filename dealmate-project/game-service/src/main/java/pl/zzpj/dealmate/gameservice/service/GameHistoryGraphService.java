@@ -36,10 +36,28 @@ public class GameHistoryGraphService {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-            File tempJsonFile = File.createTempFile("game_history", ".json");
-            tempJsonFile.setReadable(false, false);
-            tempJsonFile.setWritable(true, true);
-            tempJsonFile.setExecutable(false, false);
+            File secureTempDir = new File("dealmate-project/game-service/tmp");
+            if (!secureTempDir.exists() && !secureTempDir.mkdirs()) {
+                log.error("Nie udało się utworzyć bezpiecznego katalogu tymczasowego: " + secureTempDir.getAbsolutePath());
+                throw new RuntimeException("Błąd tworzenia katalogu tymczasowego");
+            }
+            secureTempDir.setReadable(true, true);
+            secureTempDir.setWritable(true, true);
+            secureTempDir.setExecutable(true, true);
+
+            File tempJsonFile = File.createTempFile("game_history", ".json", secureTempDir);
+            boolean readableSet = tempJsonFile.setReadable(false, false);
+            if (!readableSet) {
+                log.warn("Nie udało się ustawić uprawnień do odczytu dla pliku: " + tempJsonFile.getAbsolutePath());
+            }
+            boolean writableSet = tempJsonFile.setWritable(true, true);
+            if (!writableSet) {
+                log.warn("Nie udało się ustawić uprawnień do zapisu dla pliku: " + tempJsonFile.getAbsolutePath());
+            }
+            boolean executableSet = tempJsonFile.setExecutable(false, false);
+            if (!executableSet) {
+                log.warn("Nie udało się ustawić uprawnień do wykonywania dla pliku: " + tempJsonFile.getAbsolutePath());
+            }
             tempJsonFile.deleteOnExit();
             mapper.writeValue(tempJsonFile, dtos);
 
