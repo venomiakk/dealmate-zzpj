@@ -86,4 +86,17 @@ class HistoryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(expectedGraph));
     }
+
+    @Test
+    void generateGraphFromJson_shouldReturnInternalServerErrorOnException() throws Exception {
+        // Given
+        String playerId = "playerWithError";
+        when(gameHistoryGraphService.generateGraphFromJson(playerId))
+                .thenThrow(new RuntimeException("Błąd generowania wykresu"));
+
+        // When & Then
+        mockMvc.perform(get("/history/generateGraph/{playerId}", playerId))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Błąd: Błąd generowania wykresu")));
+    }
 }

@@ -32,14 +32,13 @@ public class GameHistoryGraphService {
                             h.getTimestamp()
                     )).toList();
 
-            // Zapisz dane do tymczasowego pliku JSON
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
             File tempJsonFile = File.createTempFile("game_history", ".json");
             mapper.writeValue(tempJsonFile, dtos);
 
-            String pythonExe = "python"; // lub "python" jeśli w PATH
+            String pythonExe = "python";
             String scriptPath = "dealmate-project/game-service/src/main/resources/python/plot_generator.py";
 
             ProcessBuilder pb = new ProcessBuilder(pythonExe, scriptPath, tempJsonFile.getAbsolutePath());
@@ -60,14 +59,15 @@ public class GameHistoryGraphService {
             }
 
             int exitCode = process.exitValue();
-            tempJsonFile.delete(); // usuń tymczasowy plik po zakończeniu
-
+            tempJsonFile.delete();
 
             return output.toString();
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Wątek został przerwany podczas generowania wykresu.", e);
         } catch (Exception e) {
             return e.toString();
         }
-
     }
 }
