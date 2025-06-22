@@ -41,9 +41,6 @@ public class GameHistoryGraphService {
                 log.error("Nie udało się utworzyć bezpiecznego katalogu tymczasowego: " + secureTempDir.getAbsolutePath());
                 throw new RuntimeException("Błąd tworzenia katalogu tymczasowego");
             }
-            secureTempDir.setReadable(true, true);
-            secureTempDir.setWritable(true, true);
-            secureTempDir.setExecutable(true, true);
 
             File tempJsonFile = File.createTempFile("game_history", ".json", secureTempDir);
             boolean readableSet = tempJsonFile.setReadable(false, false);
