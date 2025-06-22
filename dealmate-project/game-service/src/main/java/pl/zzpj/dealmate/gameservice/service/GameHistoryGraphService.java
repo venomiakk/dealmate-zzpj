@@ -3,6 +3,7 @@ package pl.zzpj.dealmate.gameservice.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import pl.zzpj.dealmate.gameservice.dto.GameHistoryDto;
 import pl.zzpj.dealmate.gameservice.model.GameHistory;
@@ -12,7 +13,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GameHistoryGraphService {
@@ -59,8 +60,12 @@ public class GameHistoryGraphService {
             }
 
             int exitCode = process.exitValue();
-            tempJsonFile.delete();
-
+            boolean deleted = tempJsonFile.delete();
+            if (!deleted) {
+                // Możesz użyć loggera, np. log.warn(...)
+                log.warn("Nie udało się usunąć pliku tymczasowego: " + tempJsonFile.getAbsolutePath());
+            }
+        
             return output.toString();
 
         } catch (InterruptedException e) {
