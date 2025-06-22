@@ -77,14 +77,14 @@ class GameHistoryGraphServiceTest {
         String result = gameHistoryGraphService.generateGraphFromJson(playerId);
 
         // Then
-        // Tu możesz dodać asercję na logi, jeśli masz testowy appender
+
     }
 
     @Test
     void shouldThrowWhenTempDirCannotBeCreated() {
         // Given
         String playerId = "player1";
-        // Niepotrzebne: when(gameHistoryService.getHistoryForPlayer(playerId)).thenReturn(List.of(new GameHistory()));
+
 
         GameHistoryGraphService service = new GameHistoryGraphService(gameHistoryService) {
             @Override
@@ -108,7 +108,6 @@ class GameHistoryGraphServiceTest {
     void shouldThrowWhenPythonProcessTimeout() {
         // Given
         String playerId = "player1";
-        // Niepotrzebne: when(gameHistoryService.getHistoryForPlayer(playerId)).thenReturn(List.of(new GameHistory()));
 
         GameHistoryGraphService service = new GameHistoryGraphService(gameHistoryService) {
             @Override
@@ -130,9 +129,8 @@ class GameHistoryGraphServiceTest {
 
     @Test
     void shouldThrowWhenThreadInterrupted() {
-        // Given
+
         String playerId = "player1";
-        // Niepotrzebne: when(gameHistoryService.getHistoryForPlayer(playerId)).thenReturn(List.of(new GameHistory()));
 
         GameHistoryGraphService service = new GameHistoryGraphService(gameHistoryService) {
             @Override
