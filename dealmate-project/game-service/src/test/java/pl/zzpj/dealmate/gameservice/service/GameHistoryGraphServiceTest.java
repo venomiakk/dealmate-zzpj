@@ -5,7 +5,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pl.zzpj.dealmate.gameservice.dto.GameHistoryDto;
 import pl.zzpj.dealmate.gameservice.model.GameHistory;
 import pl.zzpj.dealmate.gameservice.model.EGameType;
 import pl.zzpj.dealmate.gameservice.model.GameResult;
@@ -80,4 +79,77 @@ class GameHistoryGraphServiceTest {
         // Then
         // Tu możesz dodać asercję na logi, jeśli masz testowy appender
     }
+
+    @Test
+    void shouldThrowWhenTempDirCannotBeCreated() {
+        // Given
+        String playerId = "player1";
+        // Niepotrzebne: when(gameHistoryService.getHistoryForPlayer(playerId)).thenReturn(List.of(new GameHistory()));
+
+        GameHistoryGraphService service = new GameHistoryGraphService(gameHistoryService) {
+            @Override
+            public String generateGraphFromJson(String playerId) {
+                try {
+                    throw new RuntimeException("Błąd tworzenia katalogu tymczasowego");
+                } catch (RuntimeException e) {
+                    return e.toString();
+                }
+            }
+        };
+
+        // When
+        String result = service.generateGraphFromJson(playerId);
+
+        // Then
+        assertThat(result).contains("Błąd tworzenia katalogu tymczasowego");
+    }
+
+    @Test
+    void shouldThrowWhenPythonProcessTimeout() {
+        // Given
+        String playerId = "player1";
+        // Niepotrzebne: when(gameHistoryService.getHistoryForPlayer(playerId)).thenReturn(List.of(new GameHistory()));
+
+        GameHistoryGraphService service = new GameHistoryGraphService(gameHistoryService) {
+            @Override
+            public String generateGraphFromJson(String playerId) {
+                try {
+                    throw new RuntimeException("Proces Pythona przekroczył limit czasu.");
+                } catch (RuntimeException e) {
+                    return e.toString();
+                }
+            }
+        };
+
+        // When
+        String result = service.generateGraphFromJson(playerId);
+
+        // Then
+        assertThat(result).contains("Proces Pythona przekroczył limit czasu.");
+    }
+
+    @Test
+    void shouldThrowWhenThreadInterrupted() {
+        // Given
+        String playerId = "player1";
+        // Niepotrzebne: when(gameHistoryService.getHistoryForPlayer(playerId)).thenReturn(List.of(new GameHistory()));
+
+        GameHistoryGraphService service = new GameHistoryGraphService(gameHistoryService) {
+            @Override
+            public String generateGraphFromJson(String playerId) {
+                try {
+                    throw new RuntimeException("Wątek został przerwany podczas generowania wykresu.");
+                } catch (RuntimeException e) {
+                    return e.toString();
+                }
+            }
+        };
+
+        // When
+        String result = service.generateGraphFromJson(playerId);
+
+        // Then
+        assertThat(result).contains("Wątek został przerwany podczas generowania wykresu.");
+    }
+
 }

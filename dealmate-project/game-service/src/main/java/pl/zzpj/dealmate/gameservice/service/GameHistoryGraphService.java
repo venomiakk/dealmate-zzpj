@@ -36,7 +36,7 @@ public class GameHistoryGraphService {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-            File secureTempDir = new File("dealmate-project/game-service/tmp");
+            File secureTempDir = new File("dealmate-project/game-service/src/main/resources/");
             if (!secureTempDir.exists() && !secureTempDir.mkdirs()) {
                 log.error("Nie udało się utworzyć bezpiecznego katalogu tymczasowego: " + secureTempDir.getAbsolutePath());
                 throw new RuntimeException("Błąd tworzenia katalogu tymczasowego");

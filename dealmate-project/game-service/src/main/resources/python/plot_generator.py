@@ -1,28 +1,25 @@
 import sys
 import json
 import base64
-
 from io import BytesIO
 from datetime import datetime
 import matplotlib
-matplotlib.use('Agg') # Ustaw backend PRZED importem pyplot
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+import pandas as pd
 
-def generate_plot(data):
-    # Przekształcenie timestampów i amountów
-    timestamps = [datetime.fromisoformat(entry["timestamp"]) for entry in data]
-    amounts = [float(entry["amount"]) for entry in data]
-
-    plt.figure(figsize=(8, 4))
-    plt.plot(timestamps, amounts, marker='o', linestyle='-', color='blue', label='Score')
-    plt.title("Game Score Over Time")
-    plt.xlabel("Time")
-    plt.ylabel("Score")
-    plt.gcf().autofmt_xdate()
-    plt.grid(True)
-    plt.legend()
-
+def generate_bar_plot(data):
+    df = pd.DataFrame(data)
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['date'] = df['timestamp'].dt.date
+    df['amount'] = df['amount'].astype(float)
+    grouped = df.groupby('date')['amount'].sum()
+    plt.figure(figsize=(10, 4))
+    grouped.plot(kind='bar', color='skyblue')
+    plt.title('Suma punktów na dzień')
+    plt.xlabel('Data')
+    plt.ylabel('Suma punktów')
+    plt.tight_layout()
     buf = BytesIO()
     plt.savefig(buf, format='png')
     buf.seek(0)
@@ -40,5 +37,5 @@ if __name__ == "__main__":
     with open(input_path, "r") as f:
         game_history = json.load(f)
 
-    result = generate_plot(game_history)
+    result = generate_bar_plot(game_history)
     print(result)
