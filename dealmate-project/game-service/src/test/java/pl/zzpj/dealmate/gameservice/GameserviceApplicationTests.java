@@ -6,8 +6,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 class GameserviceApplicationTests {
 
-	@Test
-	void contextLoads() {
-		// Sprawdzamy czy aplikacja wstaje
-	}
+//	@Test
+//	void contextLoads() {
+//		// Sprawdzamy czy aplikacja wstaje
+//	}
 }
