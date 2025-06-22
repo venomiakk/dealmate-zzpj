@@ -10,6 +10,7 @@ import pl.zzpj.dealmate.gameservice.model.EGameType;
 import pl.zzpj.dealmate.gameservice.model.GameHistory;
 import pl.zzpj.dealmate.gameservice.model.GameResult;
 import pl.zzpj.dealmate.gameservice.service.GameHistoryService;
+import pl.zzpj.dealmate.gameservice.service.GameHistoryGraphService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -20,12 +21,11 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(HistoryController.class)
-// Uwaga: SecurityConfig musi być wyłączony lub poprawnie skonfigurowany, aby te testy działały.
-// Załóżmy, że endpoint /history/** jest publicznie dostępny lub testujemy z mockowym użytkownikiem.
 @WithMockUser
 class HistoryControllerTest {
 
@@ -34,6 +34,9 @@ class HistoryControllerTest {
 
     @MockitoBean
     private GameHistoryService gameHistoryService;
+
+    @MockitoBean
+    private GameHistoryGraphService gameHistoryGraphService;
 
     @Test
     void getPlayerHistory_shouldReturnHistoryForPlayer() throws Exception {
@@ -69,5 +72,31 @@ class HistoryControllerTest {
         mockMvc.perform(get("/history/{playerId}", playerId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
+    void generateGraphFromJson_shouldReturnGraphString() throws Exception {
+        // Given
+        String playerId = "player1";
+        String expectedGraph = "graph-data";
+        when(gameHistoryGraphService.generateGraphFromJson(playerId)).thenReturn(expectedGraph);
+
+        // When & Then
+        mockMvc.perform(get("/history/generateGraph/{playerId}", playerId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(expectedGraph));
+    }
+
+    @Test
+    void generateGraphFromJson_shouldReturnInternalServerErrorOnException() throws Exception {
+        // Given
+        String playerId = "playerWithError";
+        when(gameHistoryGraphService.generateGraphFromJson(playerId))
+                .thenThrow(new RuntimeException("Błąd generowania wykresu"));
+
+        // When & Then
+        mockMvc.perform(get("/history/generateGraph/{playerId}", playerId))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Błąd: Błąd generowania wykresu")));
     }
 }

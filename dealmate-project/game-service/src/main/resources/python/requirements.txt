@@ -1,0 +1,5 @@
+# This file is used to specify the Python package dependencies for the game service.
+matplotlib
+numpy
+pandas
+mplfinance

@@ -1,73 +1,47 @@
-//package pl.zzpj.dealmate.aiservice.service;
-//
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mockito.*;
-//import org.mockito.junit.jupiter.MockitoExtension;
-//import pl.zzpj.dealmate.aiservice.dto.*;
-//
-//import java.util.List;
-//
-//import static org.assertj.core.api.Assertions.assertThat;
-//import static org.mockito.ArgumentMatchers.anyString;
-//import static org.mockito.Mockito.*;
-//
-//import java.util.List;
-//
-//import static org.mockito.Mockito.when;
-//
-//@ExtendWith(MockitoExtension.class)
-//class AiSuggestionServiceTest {
-//
-//    @Mock
-//    private GroqClient aiClient;
-//
-//    @InjectMocks
-//    private AiSuggestionService service;
-//
-//    @Test
-//    void shouldReturnMoveForTexasHoldem() {
-//        // given
-//        PokerAiRequest request = new PokerAiRequest(
-//                List.of(),                      // deck
-//                List.of(new CardDto(Rank.ACE, Suit.SPADES),
-//                        new CardDto(Rank.ACE, Suit.HEARTS)),  // hand
-//                List.of(new CardDto(Rank.KING, Suit.CLUBS))
-//        );
-//
-//        when(aiClient.getAiMove(anyString())).thenReturn("RAISE");
-//
-//        // when
-//        String move = service.getBestMove(request);
-//
-//        // then
-//        assertThat(move).isEqualTo("RAISE");
-//        verify(aiClient).getAiMove(argThat(prompt ->
-//                prompt.contains("Game type: TEXAS_HOLDEM") &&
-//                        prompt.contains("ACE of SPADES")            // szybka kontrola formatu
-//        ));
-//    }
-//
-//    @Test
-//    void shouldReturnMoveForFiveCardDraw() {
-//        // given
-//        PokerAiRequest request = new PokerAiRequest(
-//                List.of(),
-//                List.of(),
-//                List.of(new CardDto(Rank.TWO, Suit.HEARTS),
-//                        new CardDto(Rank.THREE, Suit.HEARTS),
-//                        new CardDto(Rank.FOUR, Suit.HEARTS),
-//                        new CardDto(Rank.FIVE, Suit.HEARTS),
-//                        new CardDto(Rank.SIX, Suit.HEARTS))
-//        );
-//
-//        when(aiClient.getAiMove(anyString())).thenReturn("CALL");
-//
-//        // when
-//        String move = service.getBestMove(request);
-//
-//        // then
-//        assertThat(move).isEqualTo("CALL");
-//        verify(aiClient).getAiMove(argThat(prompt -> prompt.contains("FIVE_CARD_DRAW")));
-//    }
-//}
+package pl.zzpj.dealmate.aiservice.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import pl.zzpj.dealmate.aiservice.controller.AiSuggestionController;
+import pl.zzpj.dealmate.aiservice.dto.PokerAiRequest;
+import pl.zzpj.dealmate.aiservice.service.AiSuggestionService;
+
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
+
+@WebMvcTest(AiSuggestionController.class)
+@AutoConfigureMockMvc(addFilters = false)
+class AiSuggestionServiceIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockitoBean
+    private AiSuggestionService service;
+
+    @Test
+    void shouldReturnMoveFromService() throws Exception {
+        PokerAiRequest request = new PokerAiRequest(1, 2);
+        String expectedMove = "CALL";
+        when(service.getBestMove(request)).thenReturn(expectedMove);
+
+        mockMvc.perform(post("/ai/suggest-move")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    String responseBody = result.getResponse().getContentAsString();
+                    assertThat(responseBody).isEqualTo(expectedMove);
+                });
+    }
+}
