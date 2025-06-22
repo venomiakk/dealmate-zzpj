@@ -37,6 +37,10 @@ public class GameHistoryGraphService {
             mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
             File tempJsonFile = File.createTempFile("game_history", ".json");
+            tempJsonFile.setReadable(false, false);
+            tempJsonFile.setWritable(true, true);
+            tempJsonFile.setExecutable(false, false);
+            tempJsonFile.deleteOnExit();
             mapper.writeValue(tempJsonFile, dtos);
 
             String pythonExe = "python";
