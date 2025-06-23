@@ -49,10 +49,10 @@ public class UserService {
         }
         UserEntity user = userRepository.findByUsername(updateUserRequest.username())
                 .orElseThrow(() -> new UserWithLoginDoesntExistException(updateUserRequest.username()));
-        if (updateUserRequest.firstName() != null) {
+        if (updateUserRequest.firstName() != null && !updateUserRequest.firstName().isBlank()) {
             user.setFirstName(updateUserRequest.firstName());
         }
-        if (updateUserRequest.lastName() != null) {
+        if (updateUserRequest.lastName() != null && !updateUserRequest.lastName().isBlank()) {
             user.setLastName(updateUserRequest.lastName());
         }
         if (updateUserRequest.countryCode() != null) {

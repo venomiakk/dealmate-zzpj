@@ -169,37 +169,52 @@
                 </div>
 
                 <!-- MODAL: Graph Image -->
-                <div
+                    <div
                     v-if="showGraphModal"
                     class="modal fade show"
                     tabindex="-1"
                     style="display: block; background: rgba(0,0,0,0.5);"
                     @click.self="closeGraphModal"
-                >
-                    <div class="modal-dialog modal-dialog-centered">
+                    >
+                    <div class="modal-dialog modal-xl modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title">Game History Graph</h5>
+                                <h5 class="modal-title">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    Game History Graph
+                                </h5>
                                 <button type="button" class="btn-close" @click="closeGraphModal"></button>
                             </div>
-                            <div class="modal-body text-center">
-                                <div v-if="graphLoading" class="py-4">
+                            <div class="modal-body text-center p-4">
+                                <div v-if="graphLoading" class="py-5">
                                     <div class="spinner-border" role="status"></div>
                                     <span class="ms-2">Generating graph...</span>
                                 </div>
                                 <div v-else-if="graphError" class="alert alert-danger">
                                     {{ graphError }}
                                 </div>
-                                <img
-                                    v-else-if="graphUrl"
-                                    :src="graphUrl"
-                                    alt="Game History Graph"
-                                    class="img-fluid rounded"
-                                    style="max-height: 400px;"
-                                />
+                                <div v-else-if="graphUrl" class="graph-container">
+                                    <img
+                                        :src="graphUrl"
+                                        alt="Game History Graph"
+                                        class="img-fluid rounded graph-image"
+                                    />
+                                </div>
                             </div>
                             <div class="modal-footer">
-                                <button class="btn btn-secondary" @click="closeGraphModal">Close</button>
+                                <button class="btn btn-secondary" @click="closeGraphModal">
+                                    <i class="fas fa-times me-1"></i>
+                                    Close
+                                </button>
+                                <a
+                                    v-if="graphUrl"
+                                    :href="graphUrl"
+                                    :download="`${userProfile.username}-game-history-graph.png`"
+                                    class="btn btn-primary"
+                                >
+                                    <i class="fas fa-download me-1"></i>
+                                    Download
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -297,6 +312,10 @@ const fetchUserProfile = async () => {
     } finally {
         isLoading.value = false
     }
+}
+
+const editProfile = () => {
+    router.push('/profile/edit')
 }
 
 // ZMIANA: Nowa metoda do pobierania historii gier
@@ -442,4 +461,45 @@ const closeGraphModal = () => {
 .bg-secondary {
     background-color: #6c757d !important;
 }
+
+.modal-xl {
+    max-width: 70vw; /* Zmniejszone z 90vw */
+}
+
+.graph-container {
+    width: 100%;
+    max-height: 60vh; /* Zmniejszone z 70vh */
+    overflow: auto;
+    border-radius: 0.5rem;
+    background: #f8f9fa;
+    padding: 1rem;
+}
+
+.graph-image {
+    width: 100%;
+    height: auto;
+    min-height: 300px; /* Zmniejszone z 400px */
+    max-height: 500px; /* Dodano ograniczenie wysokości */
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive dla mniejszych ekranów */
+@media (max-width: 768px) {
+    .modal-xl {
+        max-width: 80vw; /* Na mobile może być większy */
+        margin: 1rem;
+    }
+
+    .graph-container {
+        max-height: 50vh;
+        padding: 0.5rem;
+    }
+
+    .graph-image {
+        min-height: 250px;
+        max-height: 400px;
+    }
+}
+
 </style>

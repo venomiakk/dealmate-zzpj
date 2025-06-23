@@ -14,14 +14,24 @@ def generate_bar_plot(data):
     df['date'] = df['timestamp'].dt.date
     df['amount'] = df['amount'].astype(float)
     grouped = df.groupby('date')['amount'].sum()
+    colors = ['green' if val >= 0 else 'red' for val in grouped.values]
     plt.figure(figsize=(10, 4))
-    grouped.plot(kind='bar', color='skyblue')
-    plt.title('Suma punktów na dzień')
-    plt.xlabel('Data')
-    plt.ylabel('Suma punktów')
+    bars = plt.bar(grouped.index.astype(str), grouped.values, color=colors)
+    plt.title('Credits per Day')
     plt.tight_layout()
+    # Add value labels above bars
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            height + (0.01 if height >= 0 else -0.01),
+            f'{height:.2f}',
+            ha='center',
+            va='bottom' if height >= 0 else 'top',
+            fontsize=8
+        )
     buf = BytesIO()
-    plt.savefig(buf, format='png')
+    plt.savefig(buf, format='png', dpi=300)
     buf.seek(0)
     img_bytes = buf.read()
     base64_str = base64.b64encode(img_bytes).decode('utf-8')

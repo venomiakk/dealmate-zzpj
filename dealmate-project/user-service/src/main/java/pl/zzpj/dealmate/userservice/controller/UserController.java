@@ -24,7 +24,6 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<UserEntity> registerUser(@RequestBody RegisterRequest registerRequest) {
         log.debug("Registering user with request: {}", registerRequest);
-        // TODO: Add URI builder
         UserEntity user = userService.registerUser(registerRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
