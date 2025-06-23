@@ -26,7 +26,7 @@ public class DeckService {
     private final DeckRepository deckRepository;
     private final PileRepository pileRepository;
     @Value("${deck.api.url}")
-    private String deckApiUrl;
+    protected String deckApiUrl;
 
     public DeckService(RestTemplate restTemplate, DeckRepository deckRepository, PileRepository pileRepository) {
         this.restTemplate = restTemplate;

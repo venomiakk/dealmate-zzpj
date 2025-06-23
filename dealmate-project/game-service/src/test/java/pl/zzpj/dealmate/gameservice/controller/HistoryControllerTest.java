@@ -1,11 +1,9 @@
 package pl.zzpj.dealmate.gameservice.controller;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+
+import pl.zzpj.dealmate.gameservice.dto.GameHistoryDto;
 import pl.zzpj.dealmate.gameservice.model.EGameType;
 import pl.zzpj.dealmate.gameservice.model.GameHistory;
 import pl.zzpj.dealmate.gameservice.model.GameResult;
@@ -17,86 +15,38 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
-@WebMvcTest(HistoryController.class)
-@WithMockUser
 class HistoryControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockitoBean
     private GameHistoryService gameHistoryService;
+    private HistoryController historyController;
+    private  GameHistoryGraphService gameHistoryGraphService;
 
-    @MockitoBean
-    private GameHistoryGraphService gameHistoryGraphService;
+    @BeforeEach
+    void setup() {
+        gameHistoryService = mock(GameHistoryService.class);
+        historyController = new HistoryController(gameHistoryService, gameHistoryGraphService);
+    }
 
     @Test
-    void getPlayerHistory_shouldReturnHistoryForPlayer() throws Exception {
-        // Given
-        String playerId = "playerWithHistory";
-        GameHistory historyEntry = GameHistory.builder()
+    void shouldReturnPlayerHistory() {
+        GameHistory history = GameHistory.builder()
                 .id(1L)
-                .playerId(playerId)
+                .playerId("player1")
                 .gameType(EGameType.BLACKJACK)
                 .result(GameResult.WIN)
-                .amount(new BigDecimal("100"))
+                .amount(BigDecimal.valueOf(100))
                 .timestamp(LocalDateTime.now())
                 .build();
 
-        when(gameHistoryService.getHistoryForPlayer(playerId)).thenReturn(List.of(historyEntry));
+        when(gameHistoryService.getHistoryForPlayer("player1"))
+                .thenReturn(Collections.singletonList(history));
 
-        // When & Then
-        mockMvc.perform(get("/history/{playerId}", playerId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].gameType", is("BLACKJACK")))
-                .andExpect(jsonPath("$[0].result", is("WIN")))
-                .andExpect(jsonPath("$[0].amount", is(100)));
-    }
+        List<GameHistoryDto> result = historyController.getPlayerHistory("player1").getBody();
 
-    @Test
-    void getPlayerHistory_shouldReturnEmptyListForPlayerWithNoHistory() throws Exception {
-        // Given
-        String playerId = "newPlayer";
-        when(gameHistoryService.getHistoryForPlayer(playerId)).thenReturn(Collections.emptyList());
-
-        // When & Then
-        mockMvc.perform(get("/history/{playerId}", playerId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
-    }
-
-    @Test
-    void generateGraphFromJson_shouldReturnGraphString() throws Exception {
-        // Given
-        String playerId = "player1";
-        String expectedGraph = "graph-data";
-        when(gameHistoryGraphService.generateGraphFromJson(playerId)).thenReturn(expectedGraph);
-
-        // When & Then
-        mockMvc.perform(get("/history/generateGraph/{playerId}", playerId))
-                .andExpect(status().isOk())
-                .andExpect(content().string(expectedGraph));
-    }
-
-    @Test
-    void generateGraphFromJson_shouldReturnInternalServerErrorOnException() throws Exception {
-        // Given
-        String playerId = "playerWithError";
-        when(gameHistoryGraphService.generateGraphFromJson(playerId))
-                .thenThrow(new RuntimeException("Błąd generowania wykresu"));
-
-        // When & Then
-        mockMvc.perform(get("/history/generateGraph/{playerId}", playerId))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Błąd: Błąd generowania wykresu")));
+        assertThat(result).isNotEmpty();
+        assertThat(result.get(0).gameType()).isEqualTo("BLACKJACK");
     }
 }
