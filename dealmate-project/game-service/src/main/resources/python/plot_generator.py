@@ -17,6 +17,7 @@ def generate_bar_plot(data):
     colors = ['green' if val >= 0 else 'red' for val in grouped.values]
     plt.figure(figsize=(10, 4))
     bars = plt.bar(grouped.index.astype(str), grouped.values, color=colors)
+    plt.axhline(0, color='black', linestyle='--', linewidth=1)
     plt.title('Credits per Day')
     plt.tight_layout()
     # Add value labels above bars
