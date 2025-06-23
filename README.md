@@ -1,9 +1,5 @@
 # dealmate-zzpj
 
-## Notes
-- Consider creating external common-dto library for all services
-- Consider creating configuration profiles for different environments (dev, test, prod)
-
 ## Dealmate - Card Game Platform
 
 The aim of the project is to create a platform for playing various card games online, allowing users to set up tables,
@@ -35,31 +31,36 @@ join multiplayer games and compete in real time.
 1. Start the (**apigateway**) server
 1. Start the rest of the services
 
-## Selected topics
+## Selected tools and technologies
 
+- [x] Spring Boot Application
 - [x] Centralized configuration via Spring Cloud Config Server
-- [x] Service discovery via Spring Cloud Eureka
+- [x] Microservices architecture - service discovery via Spring Cloud Eureka
 - [x] Authorization management via Spring Authorization Server
 - [x] Implementation of static code analysis (SonarQube)
-- [ ] Syntactic news from the latest JDK
-    - [ ] Virtual Threads
-    - [ ] Gatherers
+- [x] Syntactic news from the latest JDK
+    - Virtual Threads
+    - Sealed Classes/Interfaces
+    - Pattern Matching for Switch
+    - Records
 - [x] Using AssertJ in Testing
-- [ ] Concurrency (multiple games at the same time)
-- [ ] Use of AI
+- [x] Concurrency (multiple games at the same time)
+- [x] Use of AI
+- [x] Java - Python integration (ProcessBuilder)
+- [x] Integration with Deck of Cards API
 
 ## Key functionalities
 
 - Registration and login
-- Creation of game rooms (public and private)
-- Possibility to play different types of card games
+- Creation of game rooms
+- Possibility to play card games
 - Chat during the game
 - Integration with AI to analyze the game (suggest moves)
 
 
 ## Contributors
 
-- [Adrian Michałek](https://github.com/venomiakk)
-- [Natalia Nykiel](https://github.com/natalianykiel)
-- [Maksymilian Paluśkiewicz](https://github.com/FdotP)
-- [Patryk Sałyga](https://github.com/patryksalyga)
+- [Adrian Michałek 247736](https://github.com/venomiakk)
+- [Natalia Nykiel 247746](https://github.com/natalianykiel)
+- [Maksymilian Paluśkiewicz 247754](https://github.com/FdotP)
+- [Patryk Sałyga 247780](https://github.com/patryksalyga)
