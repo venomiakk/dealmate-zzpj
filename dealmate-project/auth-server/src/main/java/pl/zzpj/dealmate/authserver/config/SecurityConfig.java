@@ -143,21 +143,19 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated());
 
         http    // If any errors occur redirect user to login page
-                // ?: Should custom cors configuration be applied here?
                 .exceptionHandling(exceptions ->
                         exceptions.defaultAuthenticationEntryPointFor(
                                 new LoginUrlAuthenticationEntryPoint("/login"),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
                         )
                 )
-                // enable auth server to accept JWT for endpoints such as /userinfo
                 .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));
 
         return http.build();
     }
 
     @Bean
-    @Order(2) // security filter chain for the rest of your application and any custom endpoints you may have
+    @Order(2)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(Customizer.withDefaults())
@@ -192,15 +190,6 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
-
-    //@Bean
-    //OAuth2TokenGenerator<OAuth2Token> tokenGenerator(JWKSource<SecurityContext> jwkSource) {
-    //    JwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
-    //    JwtGenerator jwtAccessTokenGenerator = new JwtGenerator(jwtEncoder);
-    //    jwtAccessTokenGenerator.setJwtCustomizer(oauth2AccessTokenCustomizer);
-    //
-    //    return new DelegatingOAuth2TokenGenerator(jwtAccessTokenGenerator);
-    //}
 
     @Bean
     OAuth2TokenGenerator<OAuth2Token> tokenGenerator(JWKSource<SecurityContext> jwkSource){

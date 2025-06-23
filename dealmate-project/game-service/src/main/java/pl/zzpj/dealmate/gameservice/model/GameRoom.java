@@ -44,7 +44,6 @@ public class GameRoom implements Runnable {
     private final Object gameStartLock = new Object();
     private final AtomicBoolean gameHasStartedSignal = new AtomicBoolean(false);
 
-    // ZMIANA: Użycie AtomicReference do bezpiecznego zarządzania referencją do obiektu gry
     private final AtomicReference<BlackjackGame> currentGame = new AtomicReference<>();
 
     @Setter
@@ -97,14 +96,13 @@ public class GameRoom implements Runnable {
             List<String> activePlayers = new ArrayList<>(this.players.keySet());
             log.info("Starting new round in room {} with players: {}", roomId, activePlayers);
 
-            // ZMIANA: Używamy .set() do aktualizacji referencji
             this.currentGame.set(new BlackjackGame(this, deckServiceClient, messagingTemplate, activePlayers, gameHistoryService));
             this.lastRoundWinners = this.currentGame.get().play();
 
             log.info("Round finished in room {}. Winners: {}. Starting 5 second countdown.", roomId, lastRoundWinners);
 
             for (int i = 5; i > 0; i--) {
-                BlackjackGame game = this.currentGame.get(); // ZMIANA: Używamy .get() do odczytu
+                BlackjackGame game = this.currentGame.get();
                 if (game != null) {
                     game.broadcastState("New round starting soon...", this.lastRoundWinners, i);
                 }
@@ -138,7 +136,7 @@ public class GameRoom implements Runnable {
         notifyChatService(playerId + " has joined the room.");
         broadcastPlayersUpdate();
 
-        BlackjackGame game = currentGame.get(); // ZMIANA: Używamy .get()
+        BlackjackGame game = currentGame.get();
         if (game != null) {
             game.broadcastState("You are spectating. Waiting for the next round.", this.lastRoundWinners, null);
         }
@@ -148,7 +146,7 @@ public class GameRoom implements Runnable {
     public boolean leave(String playerId) {
         if (players.remove(playerId) != null) {
             log.info("Player {} left room {}", playerId, roomId);
-            BlackjackGame game = this.currentGame.get(); // ZMIANA: Używamy .get()
+            BlackjackGame game = this.currentGame.get();
             if (game != null && playerId.equals(game.getCurrentPlayerId())) {
                 game.skipCurrentPlayerTurn();
             }
@@ -193,7 +191,7 @@ public class GameRoom implements Runnable {
     }
 
     public void handlePlayerAction(String playerId, PlayerAction action) {
-        BlackjackGame game = currentGame.get(); // ZMIANA: Używamy .get()
+        BlackjackGame game = currentGame.get();
         if(game != null) {
             game.handlePlayerAction(playerId, action);
         } else {
@@ -215,7 +213,6 @@ public class GameRoom implements Runnable {
         }
     }
 
-    // Setter tylko na potrzeby testów jednostkowych
     public void setCurrentGame(BlackjackGame game) {
         this.currentGame.set(game);
     }

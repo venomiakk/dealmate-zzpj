@@ -39,7 +39,7 @@ public class SecurityConfig {
     @Order(2)
     public SecurityWebFilterChain apiSecurityFilterChain(ServerHttpSecurity http) {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // <--- WAŻNE: Włączamy CORS tutaj
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
