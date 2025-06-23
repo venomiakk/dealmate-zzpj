@@ -19,7 +19,7 @@
                             <h4>Game in progress...</h4>
                             <p class="text-muted">You are spectating. Waiting for the next round to begin.</p>
                         </div>
-                        
+
                         <template v-else>
                             <div class="hand-area dealer-hand">
                                 <h5 class="area-title">Dealer's Hand ({{ dealerHandValue }})</h5>
@@ -37,7 +37,7 @@
                                 </h4>
                                 <h5 class="pot-info">Pot: {{ gameState.pot || 0 }}</h5>
                                 <!-- DODAJEMY WYŚWIETLANIE PODPOWIEDZI AI -->
-                                
+
                             </div>
                             <div class="hand-area player-hand">
                                 <h5 class="area-title">Your Hand ({{ myHandValue }}) - {{ myStatus }}</h5>
@@ -50,7 +50,7 @@
                                 <transition name="fade">
                                     <div v-if="aiHint" class="ai-hint mt-3">
                                         <strong>AI Hint:</strong> {{ aiHint }}
-                                        <button class="btn btn-sm btn-link ms-2" @click="aiHint = ''">Ukryj</button>
+                                        <button class="btn btn-sm btn-link ms-2" @click="aiHint = ''">Hide</button>
                                     </div>
                                 </transition>
                             </div>
@@ -67,7 +67,7 @@
                                 </button>
                             </div>
                         </template>
-                        
+
                         <div class="other-players-container">
                              <div v-for="player in otherPlayers" :key="player.playerId" class="other-player-hand">
                                  <h6>{{ player.playerId }} ({{ player.value }}) - {{player.status}}</h6>
@@ -93,7 +93,7 @@
                             Players ({{ playersCount }}/{{ roomData.maxPlayers }})
                         </h6>
                         <div class="players-list">
-                             <div v-for="player in roomData.players" :key="player.login" 
+                             <div v-for="player in roomData.players" :key="player.login"
                                  class="player-item"
                                  :class="{ 'winner': gameState.winners && gameState.winners.includes(player.login) }">
                                 <div class="player-details">
@@ -221,7 +221,7 @@ const fetchRoomData = async () => {
 
 const startGame = async () => {
     try {
-        await axios.post(gameService.startGame(roomId.value)); 
+        await axios.post(gameService.startGame(roomId.value));
         console.log('Start game request sent.');
     } catch (error) {
         console.error('Failed to start game:', error);
@@ -310,7 +310,7 @@ const connectToWebsockets = async () => {
 
 const performAction = (actionType) => {
     if (!isGameConnected.value || !stompClient.value.game.active) return;
-    
+
     const playerAction = { action: actionType };
     const requestBody = {
         action: playerAction,

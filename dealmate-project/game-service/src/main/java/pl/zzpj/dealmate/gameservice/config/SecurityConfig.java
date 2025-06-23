@@ -13,11 +13,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // *: Endpoint protection example
-        // *: But shouldn't it be in api gateway?
         http
-                // * Disable CSRF protection for testing purposes
-                // * POST requests are not working with CSRF enabled
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         //.requestMatchers("/user/register").permitAll()

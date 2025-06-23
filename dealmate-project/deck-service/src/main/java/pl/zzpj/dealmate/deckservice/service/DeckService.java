@@ -181,7 +181,6 @@ public class DeckService {
     }
 
 
-    // Dobierz konkretne karty
     public List<CardDTO> drawSpecificCardsFromPile(Long deckId, String pileName, List<String> cardCodes) {
         DeckEntity deck = deckRepository.findById(deckId).orElseThrow(() -> new RuntimeException("Deck not found"));
 
@@ -209,7 +208,6 @@ public class DeckService {
 
     }
 
-    // Dobierz N kart
     public List<CardDTO> drawCountFromPile(Long deckId, String pileName, int count) {
         DeckEntity deck = deckRepository.findById(deckId).orElseThrow(() -> new RuntimeException("Deck not found"));
 
@@ -236,7 +234,6 @@ public class DeckService {
 
     }
 
-    // Dobierz kartę z dołu
     public List<CardDTO> drawBottomFromPile(Long deckId, String pileName) {
         DeckEntity deck = deckRepository.findById(deckId).orElseThrow(() -> new RuntimeException("Deck not found"));
 
@@ -263,7 +260,6 @@ public class DeckService {
 
     }
 
-    // Dobierz losową kartę
     public List<CardDTO> drawRandomFromPile(Long deckId, String pileName) {
         DeckEntity deck = deckRepository.findById(deckId).orElseThrow(() -> new RuntimeException("Deck not found"));
 

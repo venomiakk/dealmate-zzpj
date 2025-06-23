@@ -29,7 +29,6 @@ public class GameHistoryService {
             case PUSH -> BigDecimal.ZERO;
         };
 
-        // 1. Zapisz historię gry
         GameHistory history = GameHistory.builder()
                 .playerId(playerId)
                 .gameType(EGameType.BLACKJACK)
@@ -38,9 +37,6 @@ public class GameHistoryService {
                 .build();
         gameHistoryRepository.save(history);
 
-        // 2. Zaktualizuj kredyty użytkownika
-        // ZMIANA: Wywołujemy nową wersję metody z dwoma argumentami.
-        // Konwertujemy BigDecimal na Long, ponieważ tego oczekuje Twój endpoint.
         if (amountChange.compareTo(BigDecimal.ZERO) != 0) {
             userServiceClient.updateUserCredits(playerId, amountChange.longValue());
         }

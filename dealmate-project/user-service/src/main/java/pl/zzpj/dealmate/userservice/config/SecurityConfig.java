@@ -16,12 +16,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // *: Endpoint protection example
-        // *: But shouldn't it be in api gateway?
         http
-                // * Disable CSRF protection for testing purposes
-                // * POST requests are not working with CSRF enabled
-                //.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/user/register").permitAll()
@@ -35,16 +30,4 @@ public class SecurityConfig {
         return http.build();
     }
 
-    //@Bean
-    //public CorsConfigurationSource corsConfigurationSource() {
-    //    CorsConfiguration configuration = new CorsConfiguration();
-    //    configuration.addAllowedOrigin("http://localhost:5173");
-    //    configuration.addAllowedMethod("*");
-    //    configuration.addAllowedHeader("*");
-    //    configuration.setAllowCredentials(true);
-    //
-    //    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    //    source.registerCorsConfiguration("/**", configuration);
-    //    return source;
-    //}
 }

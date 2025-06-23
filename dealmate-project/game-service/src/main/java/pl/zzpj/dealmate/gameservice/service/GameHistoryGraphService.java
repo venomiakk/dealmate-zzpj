@@ -81,7 +81,6 @@ public class GameHistoryGraphService {
             int exitCode = process.exitValue();
             boolean deleted = tempJsonFile.delete();
             if (!deleted) {
-                // Możesz użyć loggera, np. log.warn(...)
                 log.warn("Nie udało się usunąć pliku tymczasowego: " + tempJsonFile.getAbsolutePath());
             }
         

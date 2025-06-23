@@ -27,7 +27,6 @@ public class BlackjackGame {
     private final GameHistoryService gameHistoryService;
     private long deckId;
 
-    // ZMIANA: Użycie klas atomowych dla bezpieczeństwa wątkowego
     private final AtomicReference<GameStatus> gameStatus = new AtomicReference<>();
     private final AtomicInteger currentPlayerIndex = new AtomicInteger(0);
 
@@ -43,7 +42,7 @@ public class BlackjackGame {
         this.messagingTemplate = messagingTemplate;
         this.activePlayers = activePlayers;
         this.gameHistoryService = gameHistoryService;
-        this.gameStatus.set(GameStatus.STARTING); // ZMIANA: Użycie .set()
+        this.gameStatus.set(GameStatus.STARTING);
     }
 
     public List<String> play() {
@@ -52,9 +51,8 @@ public class BlackjackGame {
             broadcastState("The round has started. Dealing cards.", null, null);
             dealInitialCards();
 
-            this.gameStatus.set(GameStatus.PLAYER_TURN); // ZMIANA: Użycie .set()
+            this.gameStatus.set(GameStatus.PLAYER_TURN);
 
-            // ZMIANA: Pętla używa teraz AtomicInteger
             for (int i = 0; i < activePlayers.size(); i++) {
                 currentPlayerIndex.set(i);
                 String currentPlayerId = activePlayers.get(i);
@@ -84,11 +82,11 @@ public class BlackjackGame {
                 }
             }
 
-            this.gameStatus.set(GameStatus.DEALER_TURN); // ZMIANA: Użycie .set()
+            this.gameStatus.set(GameStatus.DEALER_TURN);
             broadcastState("Dealer's turn.", null, null);
             playDealerTurn();
 
-            this.gameStatus.set(GameStatus.ROUND_FINISHED); // ZMIANA: Użycie .set()
+            this.gameStatus.set(GameStatus.ROUND_FINISHED);
             return determineWinners();
 
         } catch (Exception e) {
@@ -177,7 +175,6 @@ public class BlackjackGame {
     }
 
     public void handlePlayerAction(String playerId, PlayerAction action) {
-        // ZMIANA: Użycie .get() do odczytu wartości
         if (!activePlayers.contains(playerId) || currentPlayerIndex.get() >= activePlayers.size() || !Objects.equals(activePlayers.get(currentPlayerIndex.get()), playerId) || gameStatus.get() != GameStatus.PLAYER_TURN) {
             log.warn("Player {} action out of turn or is not an active player.", playerId);
             return;
@@ -232,7 +229,7 @@ public class BlackjackGame {
     private int calculateHandValue(List<CardDto> hand) {
         int value = 0;
         int aceCount = 0;
-        if (hand == null) return 0; // Dodatkowe zabezpieczenie
+        if (hand == null) return 0;
         for (CardDto card : hand) {
             if (card == null || card.value() == null) {
                 continue;
@@ -269,7 +266,6 @@ public class BlackjackGame {
                 ));
 
         List<CardDto> dealerCardsToSend = new ArrayList<>();
-        // ZMIANA: Użycie .get() do odczytu wartości
         if (gameStatus.get() == GameStatus.PLAYER_TURN || gameStatus.get() == GameStatus.STARTING) {
             if (!dealerHand.isEmpty()) {
                 dealerCardsToSend.add(dealerHand.get(0));
@@ -284,7 +280,7 @@ public class BlackjackGame {
         String currentTurnPlayer = getCurrentPlayerId();
 
         GameStateDto state = new GameStateDto(
-                gameStatus.get().name(), // ZMIANA: Użycie .get()
+                gameStatus.get().name(),
                 playerHandsDto,
                 dealerHandDto,
                 currentTurnPlayer,
@@ -298,7 +294,6 @@ public class BlackjackGame {
     }
 
     public String getCurrentPlayerId() {
-        // ZMIANA: Użycie .get() do odczytu wartości
         if (gameStatus.get() == GameStatus.PLAYER_TURN && currentPlayerIndex.get() < activePlayers.size()) {
             return activePlayers.get(currentPlayerIndex.get());
         }

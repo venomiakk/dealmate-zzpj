@@ -22,7 +22,6 @@ public class ChatWebSocketController {
     @MessageMapping("/room/{roomId}/chat.sendMessage")
     public void sendMessage(@DestinationVariable String roomId, @Payload ChatMessageDto chatMessage) {
         log.warn("Received message for room {}: {}", roomId, chatMessage);
-        // Ustaw nadawcę na podstawie zalogowanego użytkownika
         chatMessage.setSender(chatMessage.getSender());
         chatMessage.setTimestamp(System.currentTimeMillis());
 

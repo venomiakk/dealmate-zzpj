@@ -1,4 +1,3 @@
-// Plik: gameservice/src/main/java/pl/zzpj/dealmate/gameservice/client/DeckServiceClient.java
 package pl.zzpj.dealmate.gameservice.client;
 
 import org.springframework.cloud.openfeign.FeignClient;

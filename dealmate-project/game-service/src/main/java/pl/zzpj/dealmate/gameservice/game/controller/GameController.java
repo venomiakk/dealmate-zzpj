@@ -18,11 +18,9 @@ public class GameController {
     private final RoomManager roomManager;
 
     @MessageMapping("/game/{roomId}/action")
-    // ZMIANA: Metoda przyjmuje teraz GameActionRequest i nie potrzebuje Principal
     public void handleGameAction(@Payload GameActionRequest request,
                                  @DestinationVariable String roomId) {
 
-        // ZMIANA: Pobieramy dane z obiektu request
         String playerName = request.playerId();
         PlayerAction playerAction = request.action();
 

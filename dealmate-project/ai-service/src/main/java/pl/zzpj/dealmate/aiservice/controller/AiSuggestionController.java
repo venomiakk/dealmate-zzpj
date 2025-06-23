@@ -22,7 +22,6 @@ public class AiSuggestionController {
     @PostMapping("/suggest-move")
     public ResponseEntity<String> suggestMove(@RequestBody PokerAiRequest request) {
         log.warn("Received AI move request: {}", request);
-        // In real life return a typed response object, e.g. AiSuggestionResponse
         String move = service.getBestMove(request);
         return ResponseEntity.ok(move);
     }
