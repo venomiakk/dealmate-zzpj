@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: game-service # ZMIEŃ NA: ai-service / chat-service / deck-service
-          image: dealmate-game-service:v2 # PODMIEŃ OBRAZ
+          image: dealmate-game-service:v4 # PODMIEŃ OBRAZ
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

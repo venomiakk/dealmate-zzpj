@@ -1,0 +1,4 @@
+# Globalne ustawienia dla całego systemu DealMate
+global:
+  imageTag: "v2"
+  dbPassword: "123"

@@ -22,11 +22,11 @@ data:
         oauth2:
           resourceserver:
             jwt:
-              issuer-uri: http://auth-server:8080
+              jwk-set-uri: http://auth-server:9000/oauth2/jwks
           client:
             provider:
               platform-auth-server:
-                issuer-uri: http://auth-server:8080
+                issuer-uri: http://auth-server:9000
             registration:
               gateway-client:
                 provider: platform-auth-server
@@ -78,6 +78,11 @@ data:
               predicates:
                 - Path=/ws-chat/**
 
+            - id: game-websocket   # DODAJ TO
+              uri: http://game-service:8080
+              predicates:
+                - Path=/ws-game/**
+
             - id: ai-service
               uri: http://ai-service:8080
               predicates:
@@ -108,7 +113,7 @@ data:
         oauth2:
           authserver:
             # Uwaga: Przeglądarka musi widzieć ten adres!
-            issuer: http://localhost:8080
+            issuer: http://127.0.0.1:9000
     logging:
       level:
         org.springframework.web: TRACE
@@ -129,7 +134,7 @@ data:
         oauth2:
           resourceserver:
             jwt:
-              issuer-uri: http://auth-server:8080
+              jwk-set-uri: http://auth-server:9000/oauth2/jwks
     logging:
       level:
         org.springframework.security: DEBUG
@@ -165,7 +170,7 @@ data:
         oauth2:
           resourceserver:
             jwt:
-              issuer-uri: http://auth-server:8080
+              jwk-set-uri: http://auth-server:9000/oauth2/jwks
 
   userservice.yml: |
     server:
@@ -177,7 +182,7 @@ data:
       datasource:
         url: jdbc:postgresql://postgres-service:5432/dealmatedb
         username: postgres
-        password: 123
+        password: {{ .Values.global.dbPassword | quote }} # ZMIANA: Pobieramy hasło z wartości Helm
       jpa:
         hibernate:
           ddl-auto: update
@@ -185,6 +190,6 @@ data:
         oauth2:
           resourceserver:
             jwt:
-              issuer-uri: http://auth-server:8080
+              jwk-set-uri: http://auth-server:9000/oauth2/jwks
 
 # dd

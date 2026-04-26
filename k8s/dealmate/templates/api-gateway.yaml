@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: api-gateway
-        image: dealmate-api-gateway:v2 # Podmień na swoją nazwę
+        image: dealmate-api-gateway:v3 # Podmień na swoją nazwę
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

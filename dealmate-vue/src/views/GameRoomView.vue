@@ -246,7 +246,7 @@ const connectToWebsockets = async () => {
     }
     const headers = { Authorization: `Bearer ${token}` };
 
-    const gameSocket = new SockJS('http://localhost:8080/ws-game');
+    const gameSocket = new SockJS('http://localhost:8080/gameservice/ws');
     const gameClient = new Client({
         webSocketFactory: () => gameSocket,
         connectHeaders: headers,

@@ -25,7 +25,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityWebFilterChain webSocketCorsBypassFilterChain(ServerHttpSecurity http) {
         http
-                .securityMatcher(ServerWebExchangeMatchers.pathMatchers("/ws-chat/**"))
+                .securityMatcher(ServerWebExchangeMatchers.pathMatchers("/ws-chat/**", "/ws-game/**"))
                 .authorizeExchange(exchange -> exchange
                         .anyExchange().permitAll()
                 )

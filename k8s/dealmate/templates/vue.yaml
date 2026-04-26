@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: dealmate-vue
-          image: dealmate-vue:v2 # Podmień na swoją nazwę
+          image: dealmate-vue:v4 # Podmień na swoją nazwę
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

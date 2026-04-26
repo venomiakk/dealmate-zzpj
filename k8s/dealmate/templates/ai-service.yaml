@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: ai-service # ZMIEŃ NA: ai-service / chat-service / deck-service
-          image: dealmate-ai-service:v2 # PODMIEŃ OBRAZ
+          image: dealmate-ai-service:{{ .Values.global.imageTag }} # PODMIEŃ OBRAZ
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
