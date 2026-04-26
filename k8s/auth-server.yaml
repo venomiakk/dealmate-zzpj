@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-server
+  template:
+    metadata:
+      labels:
+        app: auth-server
+    spec:
+      containers:
+        - name: auth-server
+          image: dealmate-auth-server:v2 # Podmień na swoją nazwę
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config/application.yml
+              subPath: authserver.yml
+      volumes:
+        - name: config-volume
+          configMap:
+            name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-server
+spec:
+  selector:
+    app: auth-server
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 9000 # Port widoczny na zewnątrz (dla przeglądarki)
+      targetPort: 8080 # Port, na którym faktycznie nasłuchuje kontener

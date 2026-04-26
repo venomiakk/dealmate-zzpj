@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dealmate-vue
+spec:
+  selector:
+    matchLabels:
+      app: dealmate-vue
+  template:
+    metadata:
+      labels:
+        app: dealmate-vue
+    spec:
+      containers:
+        - name: dealmate-vue
+          image: dealmate-vue:v2 # Podmień na swoją nazwę
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dealmate-vue
+spec:
+  selector:
+    app: dealmate-vue
+  ports:
+    - port: 80
+  type: LoadBalancer # Dostęp do UI (np. localhost:80)

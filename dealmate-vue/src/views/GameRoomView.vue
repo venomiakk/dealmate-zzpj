@@ -246,7 +246,7 @@ const connectToWebsockets = async () => {
     }
     const headers = { Authorization: `Bearer ${token}` };
 
-    const gameSocket = new SockJS('http://localhost:8104/ws');
+    const gameSocket = new SockJS('http://localhost:8080/ws-game');
     const gameClient = new Client({
         webSocketFactory: () => gameSocket,
         connectHeaders: headers,
@@ -272,7 +272,7 @@ const connectToWebsockets = async () => {
     });
     gameClient.activate();
 
-    const chatSocket = new SockJS('http://localhost:8100/ws-chat');
+    const chatSocket = new SockJS('http://localhost:8080/ws-chat');
     const chatClient = new Client({
         webSocketFactory: () => chatSocket,
         connectHeaders: headers,

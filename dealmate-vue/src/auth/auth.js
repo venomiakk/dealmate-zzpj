@@ -2,12 +2,12 @@ import { UserManager } from 'oidc-client-ts'
 import { reactive } from 'vue'
 
 const config = {
-    authority: 'http://127.0.0.1:9000',
+    authority: 'http://localhost:9000', // Auth Server
     client_id: 'public-client',
-    redirect_uri: 'http://localhost:5173/callback',
+    redirect_uri: 'http://localhost/callback', // Usunięty port 5173
     response_type: 'code',
     scope: 'openid profile email',
-    post_logout_redirect_uri: 'http://localhost:5173/',
+    post_logout_redirect_uri: 'http://localhost/', // Usunięty port 5173
     automaticSilentRenew: true,
 }
 

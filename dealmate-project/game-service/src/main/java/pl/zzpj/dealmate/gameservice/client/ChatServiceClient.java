@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import pl.zzpj.dealmate.gameservice.dto.RoomStateUpdateDto;
 
-@FeignClient(name = "chatservice")
+@FeignClient(name = "chatservice", url = "http://chat-service:8080")
 public interface ChatServiceClient {
 
     @PostMapping("/api/chat/system/update")

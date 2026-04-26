@@ -7,7 +7,7 @@ import pl.zzpj.dealmate.gameservice.game.dto.DeckDto;
 
 import java.util.List;
 
-@FeignClient(name = "deckservice")
+@FeignClient(name = "deckservice", url = "http://deck-service:8080")
 public interface DeckServiceClient {
 
     @PostMapping("/deck/createdeck")

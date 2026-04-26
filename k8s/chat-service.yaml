@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service # ZMIEŃ NA: ai-service / chat-service / deck-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-service # ZMIEŃ NA: ai-service / chat-service / deck-service
+  template:
+    metadata:
+      labels:
+        app: chat-service # ZMIEŃ NA: ai-service / chat-service / deck-service
+    spec:
+      containers:
+        - name: chat-service # ZMIEŃ NA: ai-service / chat-service / deck-service
+          image: dealmate-chat-service:v3 # PODMIEŃ OBRAZ
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config/application.yml
+              subPath: chatservice.yml # ZMIEŃ NA: aiservice.yml / chatservice.yml / deckservice.yml
+      volumes:
+        - name: config-volume
+          configMap:
+            name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service # ZMIEŃ NA: ai-service / chat-service / deck-service
+spec:
+  selector:
+    app: chat-service # ZMIEŃ NA: ai-service / chat-service / deck-service
+  ports:
+    - port: 8080

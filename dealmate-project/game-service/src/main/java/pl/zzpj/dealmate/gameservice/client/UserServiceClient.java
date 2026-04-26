@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import pl.zzpj.dealmate.gameservice.dto.UpdateCreditsRequest;
 import pl.zzpj.dealmate.gameservice.dto.UserDetailsDto;
 
-@FeignClient(name = "userservice")
+@FeignClient(name = "userservice", url = "http://user-service:8080")
 public interface UserServiceClient {
     @GetMapping("/user/getuser/username/{username}")
     UserDetailsDto getUserByUsername(@PathVariable("username") String username);
